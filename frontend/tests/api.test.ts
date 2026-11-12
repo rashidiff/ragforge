@@ -19,7 +19,7 @@ it("preserves safe API error categories for retry UI", async () => {
 
 it("requests Markdown and coherent raw-history downloads as blobs", async () => {
   const payload = "Exact فارسی\n";
-  const fetchMock = vi.fn().mockResolvedValue(new Response(payload, { status: 200 }));
+  const fetchMock = vi.fn().mockImplementation(async () => new Response(payload, { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
   expect(await (await api.exportChat("chat/id", "markdown")).text()).toBe(payload);
   expect(fetchMock).toHaveBeenLastCalledWith("/api/chats/chat%2Fid/export?format=markdown");

@@ -37,7 +37,7 @@ def test_session_is_default_and_never_written_to_application_state(tmp_path):
     assert store.persistence_mode("openai") == "session"
     assert vault.values == {}
     prefs = tmp_path / "state/credential_preferences.json"
-    assert "secret-value" not in prefs.read_text(encoding="utf-8")
+    assert not prefs.exists() or "secret-value" not in prefs.read_text(encoding="utf-8")
 
 
 def test_keyring_requires_explicit_opt_in_and_survives_new_store_instance(tmp_path):

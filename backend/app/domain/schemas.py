@@ -152,7 +152,7 @@ class AppSettings(Contract):
     has_key: bool
     persistence_mode: Literal["session", "keyring"]
 
-    @field_validator("model", "embedding_model")
+    @field_validator("embedding_model")
     @classmethod
     def required_text(cls, value: str) -> str:
         if not value.strip():
@@ -184,7 +184,7 @@ class SettingsUpdate(Contract):
     persist_key: bool = False
     remove_key: bool = False
 
-    @field_validator("model", "embedding_model")
+    @field_validator("embedding_model")
     @classmethod
     def nonblank_text(cls, value: str | None) -> str | None:
         if value is None:

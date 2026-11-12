@@ -50,6 +50,7 @@ def test_memory_and_recent_tail_resolve_followup_but_question_is_not_duplicated(
     runtime.chats.compactions.update(lambda state: state["chats"].update({chat_id: {
         "summary": "Selected contract ABC-104; delivery deadline matters.",
         "last_compacted_message_id": answer["message_id"], "compacted_message_count": 2}}))
+    runtime.index.library.manifest.update(lambda state: state["documents"].update({"fixture": {"status": "ready"}}))
     seen = {}
     def search(query, **kwargs):
         seen["query"] = query
@@ -98,7 +99,7 @@ def test_retry_reuses_saved_user_message_and_creates_distinct_request_attempt(pr
     assert retry.request_id != first.request_id
     assert retry.question == "Question"
     assert len(runtime.history.records(chat_id)) == 1
-    assert runtime.activity.store.records()[-1]["retry_of_request_id"] == first.request_id
+    assert next(event for event in reversed(runtime.activity.store.records()) if event["event_type"] == "user_request_saved")["retry_of_request_id"] == first.request_id
 
 
 def test_unknown_retry_and_empty_question_are_rejected_without_new_records(prepared_runtime):
@@ -136,7 +137,7 @@ def test_provider_deltas_are_saved_exactly_once_only_after_terminal_completion(p
         document_id: {"status": "ready", "sha256": "fixture"}}))
     source = {"chunk_id": chunk_id, "document_id": document_id, "filename": "source.pdf",
               "page": 3, "text": "Deadline is fifteen days.", "index_version": "v1"}
-    monkeypatch.setattr(runtime.index, "search_library", lambda query, **kwargs: [source])
+    monkeypatch.setattr(runtime.index, "search_library", lambda query, *args, **kwargs: [source])
     monkeypatch.setattr(runtime.index, "get_source_excerpt", lambda identifier: {
         **source, "page_start": 3, "page_end": 3, "available": True})
 
@@ -298,7 +299,7 @@ def test_tool_round_limit_is_enforced(prepared_runtime, monkeypatch):
         doc_id: {"status": "ready", "sha256": "fixture"}}))
     source = {"chunk_id": str(uuid4()), "document_id": doc_id, "filename": "source.pdf",
         "page": 1, "page_end": 1, "text": "Evidence", "index_version": "v1"}
-    monkeypatch.setattr(runtime.index, "search_library", lambda query, **kwargs: [source])
+    monkeypatch.setattr(runtime.index, "search_library", lambda query, *args, **kwargs: [source])
     calls = []
     class Adapter:
         def __init__(self, **kwargs): pass
@@ -329,7 +330,7 @@ def test_model_without_tool_support_falls_back_to_deterministic_initial_retrieva
         doc_id: {"status": "ready", "sha256": "fixture"}}))
     source = {"chunk_id": chunk_id, "document_id": doc_id, "filename": "source.pdf",
         "page": 1, "page_end": 1, "text": "Initial local evidence.", "index_version": "v1"}
-    monkeypatch.setattr(runtime.index, "search_library", lambda query, **kwargs: [source])
+    monkeypatch.setattr(runtime.index, "search_library", lambda query, *args, **kwargs: [source])
     monkeypatch.setattr(runtime.index, "get_source_excerpt", lambda _chunk_id: {
         **source, "page_start": 1, "available": True})
     tools_values = []

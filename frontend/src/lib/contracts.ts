@@ -120,9 +120,9 @@ export interface AppSettings {
   embedding_revision: string | null;
   ocr_enabled: boolean;
   ocr_languages: string;
-  compatible_base_url: string | null;
-  compatible_tools: boolean;
-  compatible_usage: boolean;
+  compatible_base_url?: string | null;
+  compatible_tools?: boolean;
+  compatible_usage?: boolean;
   has_key: boolean;
   persistence_mode: "session" | "keyring";
 }
