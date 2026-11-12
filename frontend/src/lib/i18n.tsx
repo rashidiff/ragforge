@@ -178,7 +178,7 @@ interface LocaleContextValue { locale: Locale; t: (english: string) => string; }
 const LocaleContext = createContext<LocaleContextValue>({ locale: "en", t: (value) => value });
 
 export function translate(locale: Locale, english: string) {
-  const defaults: Record<string, string> = {   };
+  const defaults: Record<string, string> = { "Export warning": "This export contains verbatim conversation history and may include sensitive text. Continue?", "Backup warning": "This backup contains verbatim conversation history and may include sensitive text. Continue?" };
   return locale === "en" ? defaults[english] ?? english : messages[locale][english] ?? defaults[english] ?? english;
 }
 
