@@ -1,7 +1,6 @@
-from typing import ClassVar
-
 import re
 from hashlib import sha256
+from typing import ClassVar
 from unittest.mock import patch
 from uuid import uuid4
 

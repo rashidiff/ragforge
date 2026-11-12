@@ -197,17 +197,17 @@ class IndexManager:
                     # Commit exclusion before accepting new retrieval requests.
                     self.library.update_status(document_id, "deleting")
             identifier = str(uuid4())
-            job = dict(
-                job_id=identifier,
-                kind=kind,
-                document_id=document_id,
-                stage="queued",
-                processed=0,
-                total=None,
-                started_at=timestamp(),
-                finished_at=None,
-                error=None,
-            )
+            job = {
+                "job_id": identifier,
+                "kind": kind,
+                "document_id": document_id,
+                "stage": "queued",
+                "processed": 0,
+                "total": None,
+                "started_at": timestamp(),
+                "finished_at": None,
+                "error": None,
+            }
             self.jobs.update(lambda state: state["jobs"].__setitem__(identifier, job))
             self._busy = True
             try:

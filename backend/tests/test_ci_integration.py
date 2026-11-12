@@ -1,9 +1,9 @@
 """Offline integration coverage for the complete local PDF-to-grounded-answer path."""
 
 import asyncio
-from typing import ClassVar
 import json
 import re
+from typing import ClassVar
 from uuid import uuid4
 
 import numpy as np

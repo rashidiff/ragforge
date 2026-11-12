@@ -141,19 +141,19 @@ class LibraryStore:
                         document_id=document["document_id"],
                     )
             destination = managed_pdf_path(self.directory, pdf.document_id)
-            metadata = dict(
-                document_id=pdf.document_id,
-                original_name=pdf.original_name,
-                title=pdf.original_name,
-                sha256=pdf.sha256,
-                size_bytes=pdf.size_bytes,
-                page_count=pdf.page_count,
-                imported_at=datetime.now(UTC).isoformat(),
-                status="extracting",
-                warnings=[],
-                index_version=None,
-                error=None,
-            )
+            metadata = {
+                "document_id": pdf.document_id,
+                "original_name": pdf.original_name,
+                "title": pdf.original_name,
+                "sha256": pdf.sha256,
+                "size_bytes": pdf.size_bytes,
+                "page_count": pdf.page_count,
+                "imported_at": datetime.now(UTC).isoformat(),
+                "status": "extracting",
+                "warnings": [],
+                "index_version": None,
+                "error": None,
+            }
             try:
                 # The validated original is already fsynced; publish on the same filesystem.
                 os.replace(pdf.temporary_path, destination)

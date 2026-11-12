@@ -62,9 +62,13 @@ class ChatStore:
     def create(self, title: str | None = None) -> dict:
         title = self._title(title) if title is not None else "New chat"
         stamp = now()
-        chat = dict(
-            chat_id=str(uuid4()), title=title, created_at=stamp, updated_at=stamp, deleted_at=None
-        )
+        chat = {
+            "chat_id": str(uuid4()),
+            "title": title,
+            "created_at": stamp,
+            "updated_at": stamp,
+            "deleted_at": None,
+        }
         self.state.update(lambda state: self._chats(state).__setitem__(chat["chat_id"], chat))
         return deepcopy(chat)
 

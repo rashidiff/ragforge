@@ -61,13 +61,12 @@ class HistoryStore:
             return [r for r in records if chat_id is None or r.get("chat_id") == chat_id]
 
     def append_record(self, record):
-        with self.lock:
-            with self.path.open("ab") as out:
-                out.write(
-                    (json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
-                )
-                out.flush()
-                os.fsync(out.fileno())
+        with self.lock, self.path.open("ab") as out:
+            out.write(
+                (json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+            )
+            out.flush()
+            os.fsync(out.fileno())
         return record
 
     def append_message(
@@ -89,15 +88,15 @@ class HistoryStore:
                     raise ValueError("Message ID already belongs to different content")
                 return prior
             return self.append_record(
-                dict(
-                    event_id=str(uuid4()),
-                    chat_id=chat_id,
-                    message_id=message_id,
-                    request_id=request_id,
-                    role=role,
-                    content=content,
-                    completed=completed,
-                    created_at=datetime.now(UTC).isoformat(),
-                    metadata={**(metadata or {}), "sequence": len(existing) + 1},
-                )
+                {
+                    "event_id": str(uuid4()),
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "request_id": request_id,
+                    "role": role,
+                    "content": content,
+                    "completed": completed,
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "metadata": {**(metadata or {}), "sequence": len(existing) + 1},
+                }
             )
