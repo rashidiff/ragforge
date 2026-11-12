@@ -102,4 +102,16 @@ def source_excerpt(document_id: UUID, chunk_id: UUID, request: Request):
         raise HTTPException(404) from exc
     if source["document_id"] != str(document_id):
         raise HTTPException(404)
-    return {**source, "url": f"/api/library/{document_id}/pdf#page={source['page_start']}"}
+    # Internal chunks also contain hashes, positions and embedding metadata.
+    # Project only the public contract: Contract forbids extra response fields.
+    return SourceDetail(
+        chunk_id=source["chunk_id"],
+        document_id=document_id,
+        filename=source["filename"],
+        page_start=source["page_start"],
+        page_end=source["page_end"],
+        url=f"/api/library/{document_id}/pdf#page={source['page_start']}",
+        text=source["text"],
+        index_version=source["index_version"],
+        available=source["available"],
+    )
