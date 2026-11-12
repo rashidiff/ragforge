@@ -1,5 +1,7 @@
 # Ragforge
 
+[▶ Watch the Ragforge demo](docs/media/ragforge-demo.mp4)
+
 [![CI](https://github.com/rashidiff/ragforge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rashidiff/ragforge/actions/workflows/ci.yml)
 
 **Chat with your PDFs. Keep your document library and conversation history on your machine.**
