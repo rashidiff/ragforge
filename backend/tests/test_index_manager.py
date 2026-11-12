@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import re
 from hashlib import sha256
 from unittest.mock import patch
@@ -20,7 +22,7 @@ class Tokenizer:
 
 class Embeddings:
     tokenizer = Tokenizer()
-    identity = {
+    identity: ClassVar[dict] = {
         "model": "fixture",
         "revision": None,
         "resolved_revision": "fixed",

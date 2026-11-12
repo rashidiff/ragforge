@@ -273,7 +273,7 @@ async def stream_message(chat_id: UUID, body: MessageSubmission, request: Reques
                     )
                 ),
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 -- API boundary emits a sanitized terminal error.
             yield _frame(
                 "error",
                 ErrorResponse(

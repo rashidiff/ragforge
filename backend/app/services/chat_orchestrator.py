@@ -305,7 +305,7 @@ class ChatOrchestrator:
                     force=True,
                     batch_size=emergency_count,
                 )
-            except Exception:
+            except (RuntimeError, OSError, ValueError):
                 # The old checkpoint and archive remain available; report a safe
                 # context error below if no safe request fits.
                 break
@@ -327,7 +327,7 @@ class ChatOrchestrator:
             selected_sources = []
             if budget.measure(base).fits:
                 for source in original_sources:
-                    candidate = replace(base, sources=tuple([*selected_sources, source]))
+                    candidate = replace(base, sources=(*selected_sources, source))
                     if budget.measure(candidate).fits:
                         selected_sources.append(source)
                 if selected_sources:
@@ -731,7 +731,7 @@ class ChatOrchestrator:
             return
         try:
             compactor.schedule_if_due(chat_id)
-        except Exception:
+        except (RuntimeError, OSError, ValueError):
             self.runtime.activity.emit(
                 "compaction_scheduling_failed",
                 chat_id=chat_id,

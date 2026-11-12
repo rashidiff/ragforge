@@ -67,17 +67,11 @@ it("posts JSON and reports a safe streamed provider error", async () => {
 });
 
 it("does not treat a stream without a terminal done event as complete", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        new Response('event: token\ndata: {"delta":"partial"}\n\n', {
-          status: 200,
-          headers: { "content-type": "text/event-stream" },
-        }),
-      ),
-  );
+  const response = new Response('event: token\ndata: {"delta":"partial"}\n\n', {
+    status: 200,
+    headers: { "content-type": "text/event-stream" },
+  });
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
   await expect(
     streamMessage(
       "chat",

@@ -464,84 +464,81 @@ class CompactionManager:
                 summary_revision=revision,
             )
             output, usage = [], None
-            try:
-                async for event in adapter.stream(generation, api_key, Cancellation()):
-                    if event.kind == "text":
-                        output.append(event.delta or "")
-                    elif event.kind == "usage":
-                        usage = event.usage
-                    elif event.kind == "tool_call" or (
-                        event.kind == "done" and event.finish_reason == "tool_calls"
-                    ):
-                        raise ProviderError(
-                            "unsupported_tools", "Compaction cannot use retrieval tools"
-                        )
-                    elif event.kind == "done":
-                        break
-                else:
+            async for event in adapter.stream(generation, api_key, Cancellation()):
+                if event.kind == "text":
+                    output.append(event.delta or "")
+                elif event.kind == "usage":
+                    usage = event.usage
+                elif event.kind == "tool_call" or (
+                    event.kind == "done" and event.finish_reason == "tool_calls"
+                ):
                     raise ProviderError(
-                        "incomplete_stream",
-                        "Compaction provider stream ended early",
-                        retryable=True,
+                        "unsupported_tools", "Compaction cannot use retrieval tools"
                     )
-
-                summary = validate_summary(
-                    "".join(output), token_budget=token_budget, token_counter=self.token_counter
+                elif event.kind == "done":
+                    break
+            else:
+                raise ProviderError(
+                    "incomplete_stream",
+                    "Compaction provider stream ended early",
+                    retryable=True,
                 )
-                completed_at = timestamp()
-                updated = {
-                    "summary": summary,
-                    "last_compacted_message_id": batch[-1]["message_id"],
-                    "compacted_message_count": checkpoint.get("compacted_message_count", 0)
-                    + len(batch),
-                    "prompt_version": prompt.version,
-                    "summary_revision": revision + 1,
-                    "updated_at": completed_at,
-                    "last_compacted_at": completed_at,
-                    "last_usage": (
-                        {
-                            "input_tokens": usage.input_tokens,
-                            "output_tokens": usage.output_tokens,
-                            "total_tokens": usage.total_tokens,
-                        }
-                        if usage
-                        else None
-                    ),
-                }
 
-                def commit(state):
-                    current = state.setdefault("chats", {}).get(chat_id, {})
-                    if current.get("summary_revision", 0) != revision or current.get(
-                        "last_compacted_message_id"
-                    ) != checkpoint.get("last_compacted_message_id"):
-                        raise CompactionConflictError(
-                            "Conversation memory changed while compaction was running"
-                        )
-                    state["chats"][chat_id] = updated
+            summary = validate_summary(
+                "".join(output), token_budget=token_budget, token_counter=self.token_counter
+            )
+            completed_at = timestamp()
+            updated = {
+                "summary": summary,
+                "last_compacted_message_id": batch[-1]["message_id"],
+                "compacted_message_count": checkpoint.get("compacted_message_count", 0)
+                + len(batch),
+                "prompt_version": prompt.version,
+                "summary_revision": revision + 1,
+                "updated_at": completed_at,
+                "last_compacted_at": completed_at,
+                "last_usage": (
+                    {
+                        "input_tokens": usage.input_tokens,
+                        "output_tokens": usage.output_tokens,
+                        "total_tokens": usage.total_tokens,
+                    }
+                    if usage
+                    else None
+                ),
+            }
 
-                self.runtime.chats.compactions.update(commit)
-                self.runtime.activity.emit(
-                    "compaction_completed",
-                    chat_id=chat_id,
-                    request_id=request_id,
-                    provider=provider,
-                    model=model,
-                    status="success",
-                    duration_ms=int((time.monotonic() - started) * 1000),
-                    compacted_count=updated["compacted_message_count"],
-                    summary_revision=updated["summary_revision"],
-                    usage=updated["last_usage"],
-                )
-                self._set_status(
-                    chat_id,
-                    state="completed",
-                    summary_revision=updated["summary_revision"],
-                    compacted_message_count=updated["compacted_message_count"],
-                    completed_at=completed_at,
-                    duration_ms=int((time.monotonic() - started) * 1000),
-                    usage=updated["last_usage"],
-                    error_category=None,
-                )
-                return updated
-            except asyncio.CancelledError:
-                raise
+            def commit(state):
+                current = state.setdefault("chats", {}).get(chat_id, {})
+                if current.get("summary_revision", 0) != revision or current.get(
+                    "last_compacted_message_id"
+                ) != checkpoint.get("last_compacted_message_id"):
+                    raise CompactionConflictError(
+                        "Conversation memory changed while compaction was running"
+                    )
+                state["chats"][chat_id] = updated
+
+            self.runtime.chats.compactions.update(commit)
+            self.runtime.activity.emit(
+                "compaction_completed",
+                chat_id=chat_id,
+                request_id=request_id,
+                provider=provider,
+                model=model,
+                status="success",
+                duration_ms=int((time.monotonic() - started) * 1000),
+                compacted_count=updated["compacted_message_count"],
+                summary_revision=updated["summary_revision"],
+                usage=updated["last_usage"],
+            )
+            self._set_status(
+                chat_id,
+                state="completed",
+                summary_revision=updated["summary_revision"],
+                compacted_message_count=updated["compacted_message_count"],
+                completed_at=completed_at,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                usage=updated["last_usage"],
+                error_category=None,
+            )
+            return updated

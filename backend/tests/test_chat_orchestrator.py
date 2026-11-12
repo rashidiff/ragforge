@@ -48,7 +48,7 @@ def test_memory_and_recent_tail_resolve_followup_but_question_is_not_duplicated(
 ):
     runtime, prompts, chat = prepared_runtime
     chat_id = chat["chat_id"]
-    old = runtime.chats.append_message(
+    runtime.chats.append_message(
         chat_id, "r1", "user", "Explain contract ABC-104", message_id="old-user"
     )
     answer = runtime.chats.append_message(

@@ -72,8 +72,10 @@ class ContextBudget:
         for source in request.sources:
             parts.extend(
                 (
-                    f"\n\n[Untrusted source id={source.chunk_id}; file={source.filename}; "
-                    f"pages={source.page_start}-{source.page_end}]\n",
+                    (
+                        f"\n\n[Untrusted source id={source.chunk_id}; file={source.filename}; "
+                        f"pages={source.page_start}-{source.page_end}]\n"
+                    ),
                     source.text,
                 )
             )

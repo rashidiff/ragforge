@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [.github/workflows/style-maintenance.yml]
+    paths: [backend/**, frontend/**, .github/workflows/style-maintenance.yml]
 
 permissions:
   contents: write
@@ -30,6 +30,7 @@ jobs:
       - name: Apply safe lint fixes and formatting on hosted runner
         run: |
           python -m ruff check --fix --exit-zero backend
+          python -m ruff check --fix --unsafe-fixes --exit-zero --select C408,C409,SIM102,SIM117 backend
           python -m ruff format backend
           cd frontend
           npm run format

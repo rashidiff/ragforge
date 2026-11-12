@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import re
 
 import numpy as np
@@ -15,7 +17,7 @@ class FakeTokenizer:
 
 class FakeEmbeddings:
     tokenizer = FakeTokenizer()
-    identity = {
+    identity: ClassVar[dict] = {
         "model": "fixture",
         "revision": None,
         "resolved_revision": "fixture",

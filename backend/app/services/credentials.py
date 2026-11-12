@@ -1,5 +1,6 @@
 """Session-first provider credentials with an explicit OS-keyring opt-in."""
 
+import logging
 from collections.abc import Callable
 from threading import RLock
 from typing import Any
@@ -109,8 +110,8 @@ class CredentialStore:
                     # Best-effort rollback prevents an untracked secret from being left behind.
                     try:
                         vault.delete_password(_SERVICE_NAME, provider)
-                    except Exception:
-                        pass
+                    except Exception:  # noqa: BLE001 -- Vault backends expose arbitrary exception types.
+                        logging.getLogger(__name__).warning("Credential vault rollback failed")
                     raise ProviderError(
                         "credential_vault_unavailable",
                         "Could not save the key in the OS credential vault",

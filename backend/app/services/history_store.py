@@ -44,8 +44,8 @@ class HistoryStore:
                 try:
                     value = json.loads(line)
                     if not isinstance(value, dict):
-                        raise ValueError("record is not an object")
-                except (ValueError, UnicodeError) as exc:
+                        raise TypeError("record is not an object")
+                except (ValueError, TypeError, UnicodeError) as exc:
                     raise HistoryCorruptionError(
                         "Archive contains corrupt complete records; restore a backup."
                     ) from exc

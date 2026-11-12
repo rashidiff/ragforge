@@ -215,7 +215,7 @@ class SettingsUpdate(Contract):
         if parsed.username or parsed.password or parsed.query or parsed.fragment:
             raise ValueError("Compatible endpoint cannot contain credentials, query or fragment")
         try:
-            parsed.port
+            _ = parsed.port
         except ValueError as exc:
             raise ValueError("Compatible endpoint has an invalid port") from exc
         return normalized

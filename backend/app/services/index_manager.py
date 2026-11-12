@@ -84,7 +84,7 @@ class IndexManager:
             self._snapshot = HybridSnapshot.load(directory)
             if self._snapshot.version != version:
                 raise ValueError("Generation version mismatch")
-        except Exception:
+        except (OSError, ValueError, TypeError, KeyError, ImportError, RuntimeError):
             self._snapshot = None
             self._unavailable = "The saved index cannot be read. Install local RAG dependencies if missing, or rebuild from original PDFs."
 
@@ -245,7 +245,7 @@ class IndexManager:
                 document_id=document_id,
                 duration_ms=(time.monotonic() - started) * 1000,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- Worker records unexpected failures without publishing partial indexes.
             safe = (
                 str(exc)
                 if isinstance(exc, (EmbeddingError, PdfIntakeError, IndexUnavailableError))
@@ -305,7 +305,7 @@ class IndexManager:
             identifier = document["document_id"]
             self._progress(job_id, "extracting", position, len(documents), identifier)
 
-            def report_ocr_page(processed: int, total: int):
+            def report_ocr_page(processed: int, total: int, identifier=identifier):
                 self.library.update_status(identifier, "ocr")
                 self._progress(job_id, "ocr", processed, total, identifier)
 

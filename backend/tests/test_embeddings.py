@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import numpy as np
 import pytest
 
@@ -17,7 +19,7 @@ class Tokenizer:
 class Model:
     tokenizer = Tokenizer()
     max_seq_length = 512
-    prompts = {}
+    prompts: ClassVar[dict] = {}
 
     def __init__(self):
         self.calls = []

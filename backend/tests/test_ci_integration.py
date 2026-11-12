@@ -1,6 +1,7 @@
 """Offline integration coverage for the complete local PDF-to-grounded-answer path."""
 
 import asyncio
+from typing import ClassVar
 import json
 import re
 from uuid import uuid4
@@ -20,7 +21,7 @@ class FixtureTokenizer:
 
 class FixtureEmbeddings:
     tokenizer = FixtureTokenizer()
-    identity = {
+    identity: ClassVar[dict] = {
         "model": "ci-fixture",
         "revision": None,
         "resolved_revision": "fixture-v1",
