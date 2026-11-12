@@ -248,11 +248,21 @@ class IndexManager:
                 duration_ms=(time.monotonic() - started) * 1000,
             )
         except Exception as exc:  # noqa: BLE001 -- Worker records unexpected failures without publishing partial indexes.
+            storage_details = (
+                {"errno": exc.errno, "winerror": getattr(exc, "winerror", None)}
+                if isinstance(exc, OSError)
+                else None
+            )
             safe = (
                 str(exc)
                 if isinstance(exc, (EmbeddingError, PdfIntakeError, IndexUnavailableError))
                 else "Local indexing failed. Check dependencies, original PDFs and disk access, then retry."
             )
+            if isinstance(exc, OSError):
+                safe = (
+                    f"Local index storage failed (OS error {exc.errno}). "
+                    "Check write permissions and available disk space, then retry indexing."
+                )
             try:
                 if kind == "upload" and document_id:
                     self.library.update_status(document_id, "failed", error=safe)
@@ -267,6 +277,7 @@ class IndexManager:
                     job_id=job_id,
                     document_id=document_id,
                     error_category=type(exc).__name__,
+                    storage_error=storage_details,
                     duration_ms=(time.monotonic() - started) * 1000,
                 )
             finally:
@@ -355,7 +366,9 @@ class IndexManager:
         snapshot.save(directory)
         # This is runtime generation validation, not a development test/verification run.
         for path in directory.iterdir():
-            with path.open("rb") as stream:
+            # Windows flushes require a writable handle; read-only fsync can fail
+            # even when the index files were written successfully.
+            with path.open("r+b") as stream:
                 os.fsync(stream.fileno())
         validated = HybridSnapshot.load(directory)
         if os.name == "posix":

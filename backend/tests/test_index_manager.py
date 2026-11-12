@@ -283,3 +283,61 @@ def test_reranker_failure_falls_back_to_hybrid_candidates(tmp_path, extraction):
     assert event["event_type"] == "library_reranking_completed"
     assert event["status"] == "fallback"
     manager.close()
+
+
+def test_snapshot_flush_uses_writable_handles_for_upload_delete_and_rebuild(tmp_path, extraction, monkeypatch):
+    import os
+    import stat
+
+    manager = make_manager(tmp_path)
+    original_fsync = os.fsync
+    flushed_files = []
+
+    def require_writable_handle(descriptor):
+        if stat.S_ISREG(os.fstat(descriptor).st_mode):
+            # A zero-byte write checks access without changing the file contents.
+            os.write(descriptor, b'')
+            flushed_files.append(descriptor)
+        return original_fsync(descriptor)
+
+    monkeypatch.setattr(os, 'fsync', require_writable_handle)
+    try:
+        pdf = upload(manager)
+        manager.submit('upload', pdf=pdf)
+        finish(manager)
+        assert manager.status()['ready']
+        assert manager.search_library('deadline')
+        manager.submit('delete', document_id=pdf.document_id)
+        finish(manager)
+        assert manager.status()['ready']
+        assert manager.search_library('deadline') == []
+        manager.submit('rebuild')
+        finish(manager)
+        assert manager.status()['ready']
+        assert flushed_files
+        assert all(job['stage'] == 'ready' for job in manager.status()['jobs'])
+    finally:
+        manager.close()
+
+
+def test_storage_failure_logs_numeric_os_details_without_private_paths(tmp_path, extraction):
+    import errno
+
+    manager = make_manager(tmp_path)
+    try:
+        manager.submit('upload', pdf=upload(manager))
+        finish(manager)
+        previous_version = manager.status()['index_version']
+        with patch('app.services.index_manager.HybridSnapshot.save',
+                   side_effect=OSError(errno.ENOSPC, 'private-filename-must-not-leak')):
+            manager.submit('rebuild')
+            finish(manager)
+        assert manager.status()['index_version'] == previous_version
+        assert manager.search_library('deadline')
+        failure = next(event for event in reversed(manager.activity.store.records())
+                       if event['event_type'] == 'indexing_failed')
+        assert failure['storage_error']['errno'] == errno.ENOSPC
+        assert 'private-filename-must-not-leak' not in manager.activity.store.path.read_text()
+        assert 'OS error' in manager.status()['jobs'][0]['error']
+    finally:
+        manager.close()
