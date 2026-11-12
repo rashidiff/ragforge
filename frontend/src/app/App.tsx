@@ -51,6 +51,13 @@ export function App() {
   const navigationToggle = useRef<HTMLButtonElement>(null);
   const wasSidebarOpen = useRef(false);
 
+  const selectChat = useCallback((id: string | null) => {
+    setSelected(id);
+    setMessages([]);
+    setLoadingMessages(id !== null);
+    setCompaction(null);
+  }, []);
+
   function saveBlob(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -113,7 +120,7 @@ export function App() {
   useEffect(() => {
     const controller = new AbortController();
     api.chats(controller.signal).then((data) => {
-      setChats(data.chats); setSelected(data.chats[0]?.chat_id ?? null);
+      setChats(data.chats); selectChat(data.chats[0]?.chat_id ?? null);
       selectedRef.current = data.chats[0]?.chat_id ?? null;
     }).catch((reason: unknown) => { if (!controller.signal.aborted) setError(message(reason)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -121,13 +128,11 @@ export function App() {
       if (!controller.signal.aborted) setError(message(reason));
     });
     return () => controller.abort();
-  }, []);
+  }, [selectChat]);
 
   useEffect(() => {
     const controller = new AbortController();
-    setMessages([]);
-    if (!selected) { setLoadingMessages(false); return () => controller.abort(); }
-    setLoadingMessages(true);
+    if (!selected) return () => controller.abort();
     api.messages(selected, controller.signal).then((data) => {
       if (!controller.signal.aborted) setMessages(data.messages);
     }).catch((reason: unknown) => { if (!controller.signal.aborted) setError(message(reason)); })
@@ -136,7 +141,7 @@ export function App() {
   }, [selected]);
 
   useEffect(() => {
-    if (!selected) { setCompaction(null); return; }
+    if (!selected) return;
     const controller = new AbortController();
     let timer: number | undefined;
     const load = async () => {
@@ -161,7 +166,7 @@ export function App() {
     setCreating(true); setError("");
     try {
       const chat = await api.createChat();
-      setChats((current) => [chat, ...current]); setSelected(chat.chat_id); selectedRef.current = chat.chat_id; navigate("chat");
+      setChats((current) => [chat, ...current]); selectChat(chat.chat_id); selectedRef.current = chat.chat_id; navigate("chat");
     } catch (reason) { setError(message(reason)); }
     finally { setCreating(false); }
   }
@@ -181,7 +186,7 @@ export function App() {
       await api.deleteChat(id);
       const remaining = chats.filter((chat) => chat.chat_id !== id);
       setChats(remaining);
-      if (selected === id) { setSelected(remaining[0]?.chat_id ?? null); selectedRef.current = remaining[0]?.chat_id ?? null; }
+      if (selected === id) { selectChat(remaining[0]?.chat_id ?? null); selectedRef.current = remaining[0]?.chat_id ?? null; }
       setDeleteTarget(null);
     } catch (reason) { setDeleteError(message(reason)); }
     finally { setDeleting(false); }
@@ -196,7 +201,7 @@ export function App() {
         const created = await api.createChat();
         chatId = created.chat_id;
         setChats((current) => [created, ...current]);
-        selectedRef.current = chatId; setSelected(chatId); navigate("chat");
+        selectedRef.current = chatId; selectChat(chatId); navigate("chat");
       } catch (reason) { setStreamError(message(reason)); return; }
     }
     const clientId = crypto.randomUUID();
@@ -230,7 +235,8 @@ export function App() {
             typeof payload.document_id === "string" && typeof payload.filename === "string" &&
             typeof payload.page_start === "number" && typeof payload.page_end === "number" &&
             typeof payload.url === "string") {
-          const { request_id: _requestId, ...citation } = payload;
+          const citation = { ...payload };
+          delete citation.request_id;
           citations = [...citations.filter((item) => item.chunk_id !== citation.chunk_id), citation as Citation];
           setLiveAssistant((current) => current ? { ...current, metadata: { citations } } : current);
         }
@@ -273,7 +279,7 @@ export function App() {
     <Sidebar chats={chats} selected={selected} page={page} loading={loading} creating={creating}
       onCreate={create} onRename={rename} onDelete={(chat) => { setDeleteTarget(chat); setDeleteError(""); }}
       onExport={(id, format) => void exportChat(id, format)}
-      onSelect={(id) => { setSelected(id); navigate("chat"); }} onNavigate={navigate} />
+      onSelect={(id) => { if (id !== selected) selectChat(id); navigate("chat"); }} onNavigate={navigate} />
     <main id="main" tabIndex={-1}>
       <header className="topbar">
         <button ref={navigationToggle} className="icon-button navigation-toggle" aria-label={translate(locale, sidebarOpen ? "Close navigation" : "Open navigation")}

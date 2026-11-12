@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext } from "react";
 import type { ReactNode } from "react";
 
 export type Locale = "en" | "fr" | "fa";
@@ -183,7 +183,7 @@ export function translate(locale: Locale, english: string) {
 }
 
 export function LocaleProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
-  const t = (english: string) => translate(locale, english);
+  const t = useCallback((english: string) => translate(locale, english), [locale]);
   return <LocaleContext.Provider value={{ locale, t }}>{children}</LocaleContext.Provider>;
 }
 

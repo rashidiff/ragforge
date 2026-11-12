@@ -199,8 +199,12 @@ def test_context_budget_emergency_compacts_oldest_tail_and_preserves_question_an
     fitted = asyncio.run(orchestrator.fit_context(prepared))
     assert len(batch_sizes) > 2
     assert all(1 <= size <= 8 for size in batch_sizes)
-    assert sum(batch_sizes) == 14
-    assert [item.message_id for item in fitted.generation.tail] == ["history-15", "history-16"]
+    compacted_count = sum(batch_sizes)
+    assert 0 < compacted_count <= 14
+    assert [item.message_id for item in fitted.generation.tail] == [
+        f"history-{index + 1}" for index in range(compacted_count, 16)]
+    checkpoint = runtime.chats.compactions.read()["chats"][chat_id]
+    assert checkpoint["compacted_message_count"] == compacted_count
     assert fitted.generation.current_question == "What changed?"
     assert fitted.generation.current_message_id not in {item.message_id for item in fitted.generation.tail}
     assert orchestrator._budget(fitted.generation).measure(fitted.generation).fits

@@ -23,7 +23,7 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
       if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : t("Settings could not be loaded."));
     });
     return () => controller.abort();
-  }, []);
+  }, [t]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
