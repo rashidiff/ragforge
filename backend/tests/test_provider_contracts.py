@@ -3,14 +3,31 @@ from dataclasses import replace
 
 import pytest
 
-from app.llm.base import (Cancellation, Capabilities, ConversationMessage, GenerationRequest,
-                          ProviderError, ProviderEvent, SourceExcerpt, ToolCall, Usage)
+from app.llm.base import (
+    Cancellation,
+    Capabilities,
+    ConversationMessage,
+    GenerationRequest,
+    ProviderError,
+    ProviderEvent,
+    SourceExcerpt,
+    ToolCall,
+    Usage,
+)
 
 
 def request():
-    return GenerationRequest(model="configured-model", system="Canonical prompt", memory="",
-                             tail=(), sources=(), current_message_id="current", current_question="  فارسی\nquestion  ",
-                             capabilities=Capabilities(16000, 2000), output_tokens=1000)
+    return GenerationRequest(
+        model="configured-model",
+        system="Canonical prompt",
+        memory="",
+        tail=(),
+        sources=(),
+        current_message_id="current",
+        current_question="  فارسی\nquestion  ",
+        capabilities=Capabilities(16000, 2000),
+        output_tokens=1000,
+    )
 
 
 def test_current_question_is_preserved_once_and_budget_is_explicit():
@@ -28,7 +45,10 @@ def test_tools_require_capability_and_only_library_operations_are_allowed():
     assert failure.value.category == "unsupported_tools"
     with pytest.raises(ValueError):
         ToolCall("call", "shell", {"command": "ignored"})
-    assert ToolCall("call", "search_library", {"query": "deadline", "top_k": 6}).name == "search_library"
+    assert (
+        ToolCall("call", "search_library", {"query": "deadline", "top_k": 6}).name
+        == "search_library"
+    )
 
 
 def test_stream_events_never_claim_missing_usage_or_missing_deltas():
@@ -49,6 +69,7 @@ def test_cancellation_propagates_instead_of_false_completion():
         await cancellation.wait()
         with pytest.raises(asyncio.CancelledError):
             cancellation.raise_if_cancelled()
+
     asyncio.run(scenario())
 
 

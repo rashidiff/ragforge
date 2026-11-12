@@ -1,16 +1,17 @@
 """Bounded multipart PDF validation and durable local original/manifest storage."""
+
 import asyncio
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
 import os
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 
-from .state_store import JsonState, StateCorruptionError, durable_replace
+from .state_store import JsonState, StateCorruptionError
 
 
 class PdfIntakeError(ValueError):
@@ -44,7 +45,9 @@ def inspect_pdf(path: Path) -> int:
     try:
         with pymupdf.open(path) as document:
             if not document.is_pdf or document.needs_pass or document.is_encrypted:
-                raise PdfIntakeError("encrypted_pdf", "Encrypted PDFs are not supported. Export an unencrypted copy.")
+                raise PdfIntakeError(
+                    "encrypted_pdf", "Encrypted PDFs are not supported. Export an unencrypted copy."
+                )
             if document.page_count < 1:
                 raise PdfIntakeError("empty_pdf", "The PDF has no readable pages")
             # Parsing every page catches broken page trees without extracting or indexing.
@@ -88,7 +91,9 @@ async def validate_upload(upload: UploadFile, pdf_directory: Path, max_bytes: in
             while chunk := await upload.read(1024 * 1024):
                 size += len(chunk)
                 if size > max_bytes:
-                    raise PdfIntakeError("upload_too_large", "PDF exceeds the configured file-size limit", 413)
+                    raise PdfIntakeError(
+                        "upload_too_large", "PDF exceeds the configured file-size limit", 413
+                    )
                 if len(header) < 5:
                     header = (header + chunk)[:5]
                 digest.update(chunk)
@@ -107,8 +112,9 @@ async def validate_upload(upload: UploadFile, pdf_directory: Path, max_bytes: in
 class LibraryStore:
     def __init__(self, data_dir: Path):
         self.directory = data_dir / "library/pdfs"
-        self.manifest = JsonState(data_dir / "library/manifest.json",
-                                  {"schema_version": 1, "documents": {}})
+        self.manifest = JsonState(
+            data_dir / "library/manifest.json", {"schema_version": 1, "documents": {}}
+        )
 
     @staticmethod
     def _documents(state: dict) -> dict:
@@ -119,6 +125,7 @@ class LibraryStore:
 
     def list(self) -> list[dict]:
         from copy import deepcopy
+
         return deepcopy(list(self._documents(self.manifest.read()).values()))
 
     def accept(self, pdf: ValidatedPdf) -> dict:
@@ -127,33 +134,67 @@ class LibraryStore:
             for document in self.list():
                 if document["sha256"] == pdf.sha256 and document["status"] != "deleted":
                     pdf.discard()
-                    raise PdfIntakeError("duplicate_pdf", "This PDF is already in the Library", 409,
-                                         document_id=document["document_id"])
+                    raise PdfIntakeError(
+                        "duplicate_pdf",
+                        "This PDF is already in the Library",
+                        409,
+                        document_id=document["document_id"],
+                    )
             destination = managed_pdf_path(self.directory, pdf.document_id)
-            metadata = dict(document_id=pdf.document_id, original_name=pdf.original_name,
-                            title=pdf.original_name, sha256=pdf.sha256, size_bytes=pdf.size_bytes,
-                            page_count=pdf.page_count, imported_at=datetime.now(timezone.utc).isoformat(),
-                            status="extracting", warnings=[], index_version=None, error=None)
+            metadata = dict(
+                document_id=pdf.document_id,
+                original_name=pdf.original_name,
+                title=pdf.original_name,
+                sha256=pdf.sha256,
+                size_bytes=pdf.size_bytes,
+                page_count=pdf.page_count,
+                imported_at=datetime.now(UTC).isoformat(),
+                status="extracting",
+                warnings=[],
+                index_version=None,
+                error=None,
+            )
             try:
                 # The validated original is already fsynced; publish on the same filesystem.
                 os.replace(pdf.temporary_path, destination)
                 if os.name == "posix":
-                    descriptor = os.open(destination.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+                    descriptor = os.open(
+                        destination.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+                    )
                     try:
                         os.fsync(descriptor)
                     finally:
                         os.close(descriptor)
-                self.manifest.update(lambda state: self._documents(state).__setitem__(pdf.document_id, metadata))
+                self.manifest.update(
+                    lambda state: self._documents(state).__setitem__(pdf.document_id, metadata)
+                )
             except BaseException:
                 # An unreferenced original is retained on disk for recovery, never exposed as ready.
                 pdf.discard()
                 raise
             return metadata
 
-    def update_status(self, document_id: str, status: str, *, warnings=None, error=None,
-                      index_version: str | None = None) -> dict:
-        if status not in {"extracting", "ocr", "chunking", "embedding", "indexing", "failed", "deleting", "deleted"}:
+    def update_status(
+        self,
+        document_id: str,
+        status: str,
+        *,
+        warnings=None,
+        error=None,
+        index_version: str | None = None,
+    ) -> dict:
+        if status not in {
+            "extracting",
+            "ocr",
+            "chunking",
+            "embedding",
+            "indexing",
+            "failed",
+            "deleting",
+            "deleted",
+        }:
             raise ValueError("Only a validated index publisher may mark documents ready")
+
         def mutate(state):
             document = self._documents(state).get(document_id)
             if document is None:
@@ -162,4 +203,5 @@ class LibraryStore:
             if warnings is not None:
                 document["warnings"] = list(warnings)
             return dict(document)
+
         return self.manifest.update(mutate)

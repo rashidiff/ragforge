@@ -1,7 +1,8 @@
 """Conservative per-model context accounting for the logical provider request."""
-from dataclasses import dataclass
-import math
+
 import json
+import math
+from dataclasses import dataclass
 
 from app.llm.base import GenerationRequest
 
@@ -31,8 +32,9 @@ class ContextBudget:
     undercounting multilingual text when a provider tokenizer is unavailable.
     """
 
-    def __init__(self, provider: str, model: str, context_tokens: int, output_tokens: int,
-                 token_counter=None):
+    def __init__(
+        self, provider: str, model: str, context_tokens: int, output_tokens: int, token_counter=None
+    ):
         if context_tokens < 1 or not 0 < output_tokens < context_tokens:
             raise ValueError("A valid model context window and output reserve are required")
         self.provider, self.model = provider, model
@@ -45,6 +47,7 @@ class ContextBudget:
         if self.provider == "openai":
             try:
                 import tiktoken
+
                 try:
                     encoding = tiktoken.encoding_for_model(self.model)
                 except KeyError:
@@ -67,21 +70,45 @@ class ContextBudget:
         for message in request.tail:
             parts.extend((f"\n\n{message.role}:\n", message.content))
         for source in request.sources:
-            parts.extend((f"\n\n[Untrusted source id={source.chunk_id}; file={source.filename}; "
-                          f"pages={source.page_start}-{source.page_end}]\n", source.text))
+            parts.extend(
+                (
+                    f"\n\n[Untrusted source id={source.chunk_id}; file={source.filename}; "
+                    f"pages={source.page_start}-{source.page_end}]\n",
+                    source.text,
+                )
+            )
         parts.extend(("\n\nCurrent question:\n", request.current_question))
         if request.tool_exchanges:
-            parts.extend(("\n\nTool exchanges:\n", json.dumps([
-                {"name": exchange.call.name, "arguments": exchange.call.arguments,
-                 "result": exchange.result} for exchange in request.tool_exchanges],
-                ensure_ascii=False, separators=(",", ":"))))
+            parts.extend(
+                (
+                    "\n\nTool exchanges:\n",
+                    json.dumps(
+                        [
+                            {
+                                "name": exchange.call.name,
+                                "arguments": exchange.call.arguments,
+                                "result": exchange.result,
+                            }
+                            for exchange in request.tool_exchanges
+                        ],
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                )
+            )
         input_tokens = self.count("".join(parts))
         # Provider message framing and tool definitions are not represented by text.
         input_tokens += 8 * (len(request.tail) + len(request.sources) + 3)
         if request.tools_enabled:
             input_tokens += 256
-        return ContextBudgetReport(self.provider, self.model, self.context_tokens,
-            self.output_tokens, self.safety_reserve, input_tokens)
+        return ContextBudgetReport(
+            self.provider,
+            self.model,
+            self.context_tokens,
+            self.output_tokens,
+            self.safety_reserve,
+            input_tokens,
+        )
 
     def report(self, request: GenerationRequest) -> ContextBudgetReport:
         return self.measure(request)

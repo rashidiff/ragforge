@@ -16,15 +16,24 @@ def health(request: Request):
     warnings = list(index_status["warnings"])
     settings = runtime.app_settings.read()
     if not settings["model"].strip():
-        warnings.append("Choose a language model in Settings before asking questions with PDF evidence.")
+        warnings.append(
+            "Choose a language model in Settings before asking questions with PDF evidence."
+        )
     else:
         try:
             if not runtime.credentials.has_key(settings["provider"]):
-                warnings.append("Add a provider API key in Settings to generate answers from retrieved PDFs.")
+                warnings.append(
+                    "Add a provider API key in Settings to generate answers from retrieved PDFs."
+                )
         except ProviderError:
             warnings.append("The opted-in OS credential vault is unavailable.")
-    return Health(status="ok" if index_status["ready"] else "degraded", version="0.1.0", storage_ready=True,
-                  index_ready=index_status["ready"], warnings=warnings)
+    return Health(
+        status="ok" if index_status["ready"] else "degraded",
+        version="0.1.0",
+        storage_ready=True,
+        index_ready=index_status["ready"],
+        warnings=warnings,
+    )
 
 
 @router.get("/index/status", response_model=IndexStatus)

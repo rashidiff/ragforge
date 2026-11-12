@@ -1,19 +1,28 @@
 """Provider-independent input and streaming contracts; provider wire formats stay in adapters."""
-from abc import ABC, abstractmethod
+
 import asyncio
+from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Literal
+from typing import Any, Literal
 
 
 class ProviderError(RuntimeError):
-    def __init__(self, category: str, message: str, *, retryable: bool = False,
-                 status_code: int | None = None):
+    def __init__(
+        self,
+        category: str,
+        message: str,
+        *,
+        retryable: bool = False,
+        status_code: int | None = None,
+    ):
         super().__init__(message)
         self.category, self.retryable, self.status_code = category, retryable, status_code
 
 
 class Cancellation:
     """A signal the orchestrator can propagate without storing provider credentials."""
+
     def __init__(self):
         self._event = asyncio.Event()
 
@@ -33,8 +42,7 @@ async def next_or_cancel(iterator: AsyncIterator[Any], cancellation: Cancellatio
     read_task = asyncio.create_task(anext(iterator))
     cancel_task = asyncio.create_task(cancellation.wait())
     try:
-        done, _ = await asyncio.wait({read_task, cancel_task},
-                                     return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait({read_task, cancel_task}, return_when=asyncio.FIRST_COMPLETED)
         if cancel_task in done:
             read_task.cancel()
             await asyncio.gather(read_task, return_exceptions=True)
@@ -139,8 +147,10 @@ class Usage:
     total_tokens: int | None = None
 
     def __post_init__(self):
-        if any(value is not None and value < 0 for value in
-               (self.input_tokens, self.output_tokens, self.total_tokens)):
+        if any(
+            value is not None and value < 0
+            for value in (self.input_tokens, self.output_tokens, self.total_tokens)
+        ):
             raise ValueError("Usage cannot be negative")
 
 
@@ -157,7 +167,15 @@ class ProviderEvent:
     sources: tuple[dict[str, Any], ...] = ()
 
     def __post_init__(self):
-        if self.kind not in {"text", "tool_call", "usage", "citation", "done", "status", "retrieval"}:
+        if self.kind not in {
+            "text",
+            "tool_call",
+            "usage",
+            "citation",
+            "done",
+            "status",
+            "retrieval",
+        }:
             raise ValueError("Unknown provider event")
         if self.kind == "text" and self.delta is None:
             raise ValueError("Text events require an actual upstream delta")
@@ -180,12 +198,15 @@ class ProviderAdapter(ABC):
     Keys are per-call write-only parameters and must not enter reprs, logs, errors,
     request transcripts, or any provider-controlled tool state.
     """
+
     @abstractmethod
-    def stream(self, request: GenerationRequest, api_key: str,
-               cancellation: Cancellation) -> AsyncIterator[ProviderEvent]:
+    def stream(
+        self, request: GenerationRequest, api_key: str, cancellation: Cancellation
+    ) -> AsyncIterator[ProviderEvent]:
         raise NotImplementedError
 
     @abstractmethod
-    async def test_connection(self, model: str, api_key: str,
-                              capabilities: Capabilities) -> dict[str, Any]:
+    async def test_connection(
+        self, model: str, api_key: str, capabilities: Capabilities
+    ) -> dict[str, Any]:
         raise NotImplementedError

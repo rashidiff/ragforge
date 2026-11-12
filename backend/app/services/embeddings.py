@@ -1,6 +1,7 @@
 """CPU-only local embeddings. No text is sent to an embedding API."""
+
+from collections.abc import Callable
 from threading import RLock
-from typing import Callable
 
 
 class EmbeddingError(RuntimeError):
@@ -8,9 +9,13 @@ class EmbeddingError(RuntimeError):
 
 
 class LocalEmbeddings:
-    def __init__(self, model_name: str = "intfloat/multilingual-e5-small",
-                 revision: str | None = None, batch_size: int = 32,
-                 model_factory: Callable | None = None):
+    def __init__(
+        self,
+        model_name: str = "intfloat/multilingual-e5-small",
+        revision: str | None = None,
+        batch_size: int = 32,
+        model_factory: Callable | None = None,
+    ):
         if not model_name.strip() or batch_size < 1:
             raise ValueError("Embedding model and a positive batch size are required")
         self.model_name = model_name
@@ -29,20 +34,31 @@ class LocalEmbeddings:
                     try:
                         from sentence_transformers import SentenceTransformer
                     except ImportError as exc:
-                        raise EmbeddingError("Install the backend rag dependencies to enable local embeddings") from exc
+                        raise EmbeddingError(
+                            "Install the backend rag dependencies to enable local embeddings"
+                        ) from exc
                     factory = SentenceTransformer
                 try:
-                    self._model = factory(self.model_name, revision=self.revision, device="cpu",
-                                          trust_remote_code=False, token=False)
+                    self._model = factory(
+                        self.model_name,
+                        revision=self.revision,
+                        device="cpu",
+                        trust_remote_code=False,
+                        token=False,
+                    )
                 except Exception as exc:
-                    raise EmbeddingError("Local embedding model could not be loaded. Check the model name, cache and initial download access.") from exc
+                    raise EmbeddingError(
+                        "Local embedding model could not be loaded. Check the model name, cache and initial download access."
+                    ) from exc
             return self._model
 
     @property
     def tokenizer(self):
         tokenizer = self.model.tokenizer
         if not getattr(tokenizer, "is_fast", False):
-            raise EmbeddingError("This embedding model needs a fast tokenizer with source offsets for chunking")
+            raise EmbeddingError(
+                "This embedding model needs a fast tokenizer with source offsets for chunking"
+            )
         return tokenizer
 
     @property
@@ -52,13 +68,19 @@ class LocalEmbeddings:
             commit = getattr(model[0].auto_model.config, "_commit_hash", None)
         except (AttributeError, IndexError, TypeError):
             commit = None
-        return {"model": self.model_name, "revision": self.revision,
-                "resolved_revision": commit, "normalized": True, "encoding": "e5-prefix-v1" if self.is_e5 else "model-native-v1"}
+        return {
+            "model": self.model_name,
+            "revision": self.revision,
+            "resolved_revision": commit,
+            "normalized": True,
+            "encoding": "e5-prefix-v1" if self.is_e5 else "model-native-v1",
+        }
 
     @property
     def version(self) -> str:
-        from hashlib import sha256
         import json
+        from hashlib import sha256
+
         return sha256(json.dumps(self.identity, sort_keys=True).encode()).hexdigest()
 
     @property
@@ -69,7 +91,9 @@ class LocalEmbeddings:
         if self.is_e5:
             return "query: " if query else "passage: "
         prompts = getattr(self.model, "prompts", {}) or {}
-        return prompts.get("query" if query else "document", prompts.get("passage", "") if not query else "")
+        return prompts.get(
+            "query" if query else "document", prompts.get("passage", "") if not query else ""
+        )
 
     @property
     def max_document_tokens(self) -> int:
@@ -83,6 +107,7 @@ class LocalEmbeddings:
 
     def _encode(self, texts: list[str], query: bool):
         import numpy as np
+
         with self._lock:
             model = self.model
             dimension = int(model.get_sentence_embedding_dimension())
@@ -94,18 +119,29 @@ class LocalEmbeddings:
                     raise EmbeddingError("Cannot embed empty text")
                 tokens = self.tokenizer.encode(prefix + text, add_special_tokens=True)
                 if len(tokens) > model.max_seq_length:
-                    raise EmbeddingError("Text exceeds the embedding model limit; reduce chunk size or shorten the retrieval query")
+                    raise EmbeddingError(
+                        "Text exceeds the embedding model limit; reduce chunk size or shorten the retrieval query"
+                    )
             try:
                 if self.is_e5:
-                    vectors = model.encode([prefix + text for text in texts], prompt="",
-                                           batch_size=self.batch_size, normalize_embeddings=True,
-                                           convert_to_numpy=True, show_progress_bar=False)
+                    vectors = model.encode(
+                        [prefix + text for text in texts],
+                        prompt="",
+                        batch_size=self.batch_size,
+                        normalize_embeddings=True,
+                        convert_to_numpy=True,
+                        show_progress_bar=False,
+                    )
                 else:
                     method = getattr(model, "encode_query" if query else "encode_document", None)
-                    vectors = (method or model.encode)(texts, batch_size=self.batch_size,
-                                                       normalize_embeddings=True, convert_to_numpy=True,
-                                                       show_progress_bar=False,
-                                                       **({"prompt": prefix} if method is None else {}))
+                    vectors = (method or model.encode)(
+                        texts,
+                        batch_size=self.batch_size,
+                        normalize_embeddings=True,
+                        convert_to_numpy=True,
+                        show_progress_bar=False,
+                        **({"prompt": prefix} if method is None else {}),
+                    )
                 matrix = np.asarray(vectors, dtype="float32")
                 if matrix.shape != (len(texts), dimension) or not np.isfinite(matrix).all():
                     raise ValueError("Invalid embedding shape or values")

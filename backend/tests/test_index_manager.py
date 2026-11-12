@@ -1,7 +1,7 @@
-from hashlib import sha256
 import re
-from uuid import uuid4
+from hashlib import sha256
 from unittest.mock import patch
+from uuid import uuid4
 
 import numpy as np
 import pytest
@@ -20,13 +20,22 @@ class Tokenizer:
 
 class Embeddings:
     tokenizer = Tokenizer()
-    identity = {"model": "fixture", "revision": None, "resolved_revision": "fixed", "normalized": True, "encoding": "test"}
+    identity = {
+        "model": "fixture",
+        "revision": None,
+        "resolved_revision": "fixed",
+        "normalized": True,
+        "encoding": "test",
+    }
     version = "fixture-v1"
     max_document_tokens = 500
+
     def documents(self, texts):
-        return np.array([[1., 0.] for text in texts], dtype="float32")
+        return np.array([[1.0, 0.0] for text in texts], dtype="float32")
+
     def query(self, text):
-        return np.array([1., 0.], dtype="float32")
+        return np.array([1.0, 0.0], dtype="float32")
+
     def count_tokens(self, text):
         return len(text.split())
 
@@ -41,7 +50,9 @@ def upload(manager, text="Source deadline 15 days"):
     identifier = str(uuid4())
     path = manager.library.directory / f"{identifier}.upload"
     path.write_bytes(text.encode())
-    return ValidatedPdf(path, identifier, "fixture.pdf", sha256(text.encode()).hexdigest(), len(text.encode()), 1)
+    return ValidatedPdf(
+        path, identifier, "fixture.pdf", sha256(text.encode()).hexdigest(), len(text.encode()), 1
+    )
 
 
 def finish(manager):
@@ -53,6 +64,7 @@ def extraction(monkeypatch):
     def read(path, **options):
         text = path.read_text()
         return Extraction((ExtractedPage(1, text, text),), (), False)
+
     monkeypatch.setattr("app.services.index_manager.extract_pages", read)
 
 
@@ -67,7 +79,9 @@ def test_generation_restart_and_deleted_source_filter(tmp_path, extraction):
     manager.close()
     reopened = make_manager(tmp_path)
     assert reopened.status()["index_version"] == version
-    assert reopened.get_source_excerpt(reopened.search_library("deadline")[0]["chunk_id"])["available"]
+    assert reopened.get_source_excerpt(reopened.search_library("deadline")[0]["chunk_id"])[
+        "available"
+    ]
     reopened.submit("delete", document_id=pdf.document_id)
     assert reopened.search_library("deadline") == []
     finish(reopened)
@@ -96,13 +110,16 @@ def test_rebuild_failure_keeps_previous_generation(tmp_path, extraction):
 
 def test_second_mutation_rejected_while_job_running(tmp_path, extraction):
     from threading import Event
+
     manager = make_manager(tmp_path)
     entered, release = Event(), Event()
     original = manager._rebuild
+
     def blocked(job_id):
         entered.set()
         release.wait(timeout=10)
         return original(job_id)
+
     with patch.object(manager, "_rebuild", side_effect=blocked):
         manager.submit("upload", pdf=upload(manager))
         entered.wait(timeout=10)
@@ -148,8 +165,10 @@ def test_multiple_documents_publish_as_one_validated_generation(tmp_path, extrac
     from app.services.retrieval import HybridSnapshot
 
     manager = make_manager(tmp_path)
-    first, second = upload(manager, "Alpha source says the deadline is 15 days."), upload(
-        manager, "Beta source says the review is 30 days.")
+    first, second = (
+        upload(manager, "Alpha source says the deadline is 15 days."),
+        upload(manager, "Beta source says the review is 30 days."),
+    )
     manager.submit("upload", pdf=first)
     finish(manager)
     manager.submit("upload", pdf=second)
@@ -159,12 +178,16 @@ def test_multiple_documents_publish_as_one_validated_generation(tmp_path, extrac
     generation = HybridSnapshot.load(manager.root / pointer["version"])
     included = {chunk.document_id for chunk in generation.chunks}
     assert included == {first.document_id, second.document_id}
-    assert pointer["manifest_sha256"] == sha256(
-        (manager.root / pointer["version"] / "generation.json").read_bytes()).hexdigest()
+    assert (
+        pointer["manifest_sha256"]
+        == sha256((manager.root / pointer["version"] / "generation.json").read_bytes()).hexdigest()
+    )
     manager.close()
 
 
-def test_embedding_configuration_change_rebuilds_vectors_with_new_identity(tmp_path, extraction, monkeypatch):
+def test_embedding_configuration_change_rebuilds_vectors_with_new_identity(
+    tmp_path, extraction, monkeypatch
+):
     class ModelEmbeddings(Embeddings):
         def __init__(self, model, revision):
             self.identity = {**Embeddings.identity, "model": model, "revision": revision}
@@ -186,7 +209,9 @@ def test_embedding_configuration_change_rebuilds_vectors_with_new_identity(tmp_p
     manager.close()
 
 
-def test_deletion_committed_during_rebuild_is_excluded_from_published_generation(tmp_path, extraction):
+def test_deletion_committed_during_rebuild_is_excluded_from_published_generation(
+    tmp_path, extraction
+):
     from threading import Event
 
     manager = make_manager(tmp_path)
@@ -213,7 +238,9 @@ def test_deletion_committed_during_rebuild_is_excluded_from_published_generation
     manager.close()
 
 
-def test_configured_reranker_orders_bounded_local_candidates_before_final_budget(tmp_path, extraction):
+def test_configured_reranker_orders_bounded_local_candidates_before_final_budget(
+    tmp_path, extraction
+):
     manager = make_manager(tmp_path)
     manager.settings.retrieval_tokens = 100
     manager.submit("upload", pdf=upload(manager, "Evidence alpha describes the first deadline."))
@@ -224,6 +251,7 @@ def test_configured_reranker_orders_bounded_local_candidates_before_final_budget
     class ReverseCandidates:
         def __init__(self):
             self.seen = []
+
         def rank(self, query, candidates):
             self.seen = candidates
             return list(reversed(candidates))
@@ -245,6 +273,7 @@ def test_reranker_failure_falls_back_to_hybrid_candidates(tmp_path, extraction):
     class UnavailableReranker:
         def rank(self, query, candidates):
             from app.services.local_reranker import RerankerError
+
             raise RerankerError("model unavailable")
 
     manager.reranker = UnavailableReranker()

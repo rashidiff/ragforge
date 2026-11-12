@@ -6,8 +6,10 @@ from app.services.embeddings import EmbeddingError, LocalEmbeddings
 
 class Tokenizer:
     is_fast = True
+
     def encode(self, text, add_special_tokens=False):
         return list(range(len(text.split()) + (2 if add_special_tokens else 0)))
+
     def num_special_tokens_to_add(self, pair=False):
         return 2
 
@@ -16,10 +18,13 @@ class Model:
     tokenizer = Tokenizer()
     max_seq_length = 512
     prompts = {}
+
     def __init__(self):
         self.calls = []
+
     def get_sentence_embedding_dimension(self):
         return 2
+
     def encode(self, texts, **options):
         self.calls.append((texts, options))
         return np.array([[3, 4] for text in texts], dtype="float32")
@@ -28,9 +33,11 @@ class Model:
 def test_e5_prefixes_normalization_and_cpu_loading():
     model = Model()
     loads = []
+
     def factory(name, **options):
         loads.append((name, options))
         return model
+
     encoder = LocalEmbeddings(revision="pinned", model_factory=factory)
     assert loads == []
     vectors = encoder.documents(["فارسی français", "English passage"])
@@ -60,5 +67,7 @@ def test_native_model_uses_native_document_encoder_and_changes_identity():
     encoder = LocalEmbeddings("local/native", model_factory=lambda *args, **kwargs: model)
     encoder.documents(["text"])
     assert model.calls[0][0] == ["text"]
-    other = LocalEmbeddings("local/native", revision="other", model_factory=lambda *args, **kwargs: model)
+    other = LocalEmbeddings(
+        "local/native", revision="other", model_factory=lambda *args, **kwargs: model
+    )
     assert encoder.version != other.version

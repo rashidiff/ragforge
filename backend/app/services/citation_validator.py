@@ -1,4 +1,5 @@
 """Validate provider source markers against request evidence and current Library state."""
+
 import re
 
 from app.domain.schemas import Citation
@@ -23,21 +24,33 @@ class CitationValidator:
             seen.add(chunk_id)
             original = requested.get(chunk_id)
             if original is None:
-                raise ProviderError("invalid_citation", "The response cited a source that was not retrieved")
+                raise ProviderError(
+                    "invalid_citation", "The response cited a source that was not retrieved"
+                )
             try:
                 current = self.index.get_source_excerpt(chunk_id)
             except (KeyError, IndexUnavailableError) as exc:
-                raise ProviderError("source_unavailable", "A cited PDF is no longer available") from exc
-            if (current.get("available") is not True or
-                    current.get("document_id") != original.document_id or
-                    current.get("filename") != original.filename or
-                    current.get("page_start") != original.page_start or
-                    current.get("page_end") != original.page_end or
-                    current.get("text") != original.text):
-                raise ProviderError("source_unavailable", "A cited PDF changed or is no longer available")
-            citation = Citation(chunk_id=chunk_id, document_id=original.document_id,
-                filename=original.filename, page_start=original.page_start,
+                raise ProviderError(
+                    "source_unavailable", "A cited PDF is no longer available"
+                ) from exc
+            if (
+                current.get("available") is not True
+                or current.get("document_id") != original.document_id
+                or current.get("filename") != original.filename
+                or current.get("page_start") != original.page_start
+                or current.get("page_end") != original.page_end
+                or current.get("text") != original.text
+            ):
+                raise ProviderError(
+                    "source_unavailable", "A cited PDF changed or is no longer available"
+                )
+            citation = Citation(
+                chunk_id=chunk_id,
+                document_id=original.document_id,
+                filename=original.filename,
+                page_start=original.page_start,
                 page_end=original.page_end,
-                url=f"/api/library/{original.document_id}/pdf#page={original.page_start}")
+                url=f"/api/library/{original.document_id}/pdf#page={original.page_start}",
+            )
             result.append(citation.model_dump(mode="json"))
         return result

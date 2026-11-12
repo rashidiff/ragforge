@@ -1,4 +1,5 @@
 """Bounded in-flight generation leases, isolated by chat."""
+
 from dataclasses import dataclass
 from threading import RLock
 from uuid import uuid4
@@ -48,4 +49,3 @@ class GenerationRegistry:
                 return False
             lease.cancellation.cancel()
             return True
-

@@ -1,6 +1,6 @@
-from uuid import UUID
 import json
 import re
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import Response as DownloadResponse
@@ -53,18 +53,43 @@ def export_chat(chat_id: UUID, request: Request, format: str = Query(pattern="^(
     if format == "json":
         payload = {
             "chat": {key: chat[key] for key in ("chat_id", "title", "created_at", "updated_at")},
-            "messages": [{key: message[key] for key in (
-                "event_id", "chat_id", "message_id", "request_id", "role", "content",
-                "created_at", "completed", "metadata")} for message in messages],
+            "messages": [
+                {
+                    key: message[key]
+                    for key in (
+                        "event_id",
+                        "chat_id",
+                        "message_id",
+                        "request_id",
+                        "role",
+                        "content",
+                        "created_at",
+                        "completed",
+                        "metadata",
+                    )
+                }
+                for message in messages
+            ],
         }
         body = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
         media_type, suffix = "application/json; charset=utf-8", "json"
     else:
         # Fence every message as literal text. Select a fence longer than any
         # backtick run in the content so user text cannot terminate the block.
-        title_fence = "`" * max(3, max((len(run) for run in re.findall(r"`+", chat["title"])), default=0) + 1)
-        parts = ["# Chat export", "", "Title:", title_fence, chat["title"], title_fence,
-                 "", f"Chat ID: {chat['chat_id']}", ""]
+        title_fence = "`" * max(
+            3, max((len(run) for run in re.findall(r"`+", chat["title"])), default=0) + 1
+        )
+        parts = [
+            "# Chat export",
+            "",
+            "Title:",
+            title_fence,
+            chat["title"],
+            title_fence,
+            "",
+            f"Chat ID: {chat['chat_id']}",
+            "",
+        ]
         for item in messages:
             status = "" if item["completed"] else " · incomplete"
             parts.extend((f"## {item['role'].title()} · {item['created_at']}{status}", ""))
@@ -73,8 +98,11 @@ def export_chat(chat_id: UUID, request: Request, format: str = Query(pattern="^(
             parts.extend((fence, item["content"], fence, ""))
         body = "\n".join(parts)
         media_type, suffix = "text/markdown; charset=utf-8", "md"
-    return DownloadResponse(body, media_type=media_type,
-                            headers={"Content-Disposition": f'attachment; filename="chat-{chat_id}.{suffix}"'})
+    return DownloadResponse(
+        body,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="chat-{chat_id}.{suffix}"'},
+    )
 
 
 @router.get("/{chat_id}/compaction", response_model=CompactionStatus)
@@ -89,4 +117,6 @@ async def retry_compaction(chat_id: UUID, request: Request):
     try:
         return runtime.compactor.retry(str(chat_id))
     except CompactionRetryUnavailable as exc:
-        raise HTTPException(status_code=409, detail="No failed eligible compaction batch is available to retry") from exc
+        raise HTTPException(
+            status_code=409, detail="No failed eligible compaction batch is available to retry"
+        ) from exc

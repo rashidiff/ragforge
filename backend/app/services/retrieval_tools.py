@@ -1,4 +1,5 @@
 """Strict dispatcher for the only model-callable local retrieval operations."""
+
 from uuid import UUID
 
 from app.llm.base import ToolCall
@@ -32,19 +33,45 @@ class RetrievalToolDispatcher:
                 try:
                     document_ids = [str(UUID(value)) for value in document_ids]
                 except (ValueError, TypeError, AttributeError) as exc:
-                    raise ToolDispatchError("Document filter contains an invalid identifier") from exc
+                    raise ToolDispatchError(
+                        "Document filter contains an invalid identifier"
+                    ) from exc
             results = self.index.search_library(query, top_k, document_ids)
-            return {"sources": [{key: source[key] for key in (
-                "chunk_id", "document_id", "filename", "page", "page_end", "text", "index_version")}
-                for source in results]}
+            return {
+                "sources": [
+                    {
+                        key: source[key]
+                        for key in (
+                            "chunk_id",
+                            "document_id",
+                            "filename",
+                            "page",
+                            "page_end",
+                            "text",
+                            "index_version",
+                        )
+                    }
+                    for source in results
+                ]
+            }
 
         if call.name == "get_source_excerpt":
             arguments = call.arguments
             if set(arguments) != {"chunk_id"} or not isinstance(arguments["chunk_id"], str):
                 raise ToolDispatchError("get_source_excerpt requires one chunk_id")
             source = self.index.get_source_excerpt(arguments["chunk_id"])
-            return {key: source[key] for key in (
-                "chunk_id", "document_id", "filename", "page_start", "page_end", "text",
-                "index_version", "available")}
+            return {
+                key: source[key]
+                for key in (
+                    "chunk_id",
+                    "document_id",
+                    "filename",
+                    "page_start",
+                    "page_end",
+                    "text",
+                    "index_version",
+                    "available",
+                )
+            }
 
         raise ToolDispatchError("Only Library retrieval tools are available")

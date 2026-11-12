@@ -5,7 +5,7 @@ from app.services.prompt_loader import PromptError, PromptLoader
 
 def test_edits_reload_without_code_change_and_version_matches_bytes(tmp_path):
     path = tmp_path / "system.md"
-    path.write_bytes("# فارسی\r\nEvidence only".encode("utf-8"))
+    path.write_bytes("# فارسی\r\nEvidence only".encode())
     loader = PromptLoader(tmp_path)
     first = loader.load("system")
     assert "\r\n" in first.text

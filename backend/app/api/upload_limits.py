@@ -1,4 +1,5 @@
 """Bound raw multipart traffic before it can grow an unbounded spool file."""
+
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
@@ -18,10 +19,29 @@ class UploadBodyLimit:
                 if declared < 0:
                     raise ValueError()
             except ValueError:
-                return await JSONResponse({"error": {"code": "invalid_length", "message": "Invalid request length", "retryable": False}}, status_code=400)(scope, receive, send)
+                return await JSONResponse(
+                    {
+                        "error": {
+                            "code": "invalid_length",
+                            "message": "Invalid request length",
+                            "retryable": False,
+                        }
+                    },
+                    status_code=400,
+                )(scope, receive, send)
             if declared > self.limit:
-                return await JSONResponse({"error": {"code": "upload_too_large", "message": "Upload exceeds the configured size limit", "retryable": False}}, status_code=413)(scope, receive, send)
+                return await JSONResponse(
+                    {
+                        "error": {
+                            "code": "upload_too_large",
+                            "message": "Upload exceeds the configured size limit",
+                            "retryable": False,
+                        }
+                    },
+                    status_code=413,
+                )(scope, receive, send)
         received = 0
+
         async def bounded_receive():
             nonlocal received
             message = await receive()
@@ -30,4 +50,5 @@ class UploadBodyLimit:
                 if received > self.limit:
                     raise HTTPException(413, "Upload exceeds the configured size limit")
             return message
+
         return await self.app(scope, bounded_receive, send)

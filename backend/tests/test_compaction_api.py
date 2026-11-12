@@ -1,7 +1,7 @@
 import asyncio
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.llm.base import ProviderError
@@ -19,8 +19,12 @@ def test_compaction_status_reports_checkpoint_progress_without_summary(connectio
     runtime = connection.app.state.runtime
     chat = runtime.chats.create()
     for index in range(6):
-        runtime.chats.append_message(chat["chat_id"], f"r-{index // 2}",
-            "user" if index % 2 == 0 else "assistant", f"private message {index}")
+        runtime.chats.append_message(
+            chat["chat_id"],
+            f"r-{index // 2}",
+            "user" if index % 2 == 0 else "assistant",
+            f"private message {index}",
+        )
     result = connection.get(f"/api/chats/{chat['chat_id']}/compaction")
     assert result.status_code == 200
     assert result.json()["state"] == "idle"
@@ -37,11 +41,17 @@ def test_failed_compaction_status_is_retryable_and_retry_returns_accepted(connec
     runtime.credentials.set("openai", "session-key")
     runtime.app_settings.update({"model": "compaction-model"})
     for index in range(8):
-        runtime.chats.append_message(chat_id, f"r-{index // 2}",
-            "user" if index % 2 == 0 else "assistant", f"message {index}")
+        runtime.chats.append_message(
+            chat_id,
+            f"r-{index // 2}",
+            "user" if index % 2 == 0 else "assistant",
+            f"message {index}",
+        )
 
     class FailingAdapter:
-        def __init__(self, **kwargs): pass
+        def __init__(self, **kwargs):
+            pass
+
         async def stream(self, generation, key, cancellation):
             raise ProviderError("network_error", "provider unavailable", retryable=True)
             yield

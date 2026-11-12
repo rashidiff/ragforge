@@ -8,15 +8,19 @@ from app.services.pdf_extraction import ExtractedPage
 
 class WordTokenizer:
     """Deterministic fixture tokenizer, not the production model tokenizer."""
+
     def __call__(self, text, **options):
         return {"offset_mapping": [match.span() for match in re.finditer(r"\S+", text)]}
 
 
 def test_chunks_never_cross_pages_and_keep_source_ranges():
-    pages = (ExtractedPage(7, " ".join(f"p7-{n}" for n in range(12)), ""),
-             ExtractedPage(8, "فارسی English français", ""))
+    pages = (
+        ExtractedPage(7, " ".join(f"p7-{n}" for n in range(12)), ""),
+        ExtractedPage(8, "فارسی English français", ""),
+    )
     chunks = Chunker(WordTokenizer(), target_tokens=5, overlap_tokens=2).chunks(
-        "document", "source.pdf", pages, "model@revision")
+        "document", "source.pdf", pages, "model@revision"
+    )
     assert all(chunk.page_start == chunk.page_end for chunk in chunks)
     assert [chunk.position for chunk in chunks] == list(range(len(chunks)))
     first = chunks[0].text.split()
@@ -31,7 +35,8 @@ def test_chunks_never_cross_pages_and_keep_source_ranges():
 def test_boundaries_prefer_paragraphs_without_dropping_tail():
     text = "one two three four\n\nfive six seven eight nine ten"
     chunks = Chunker(WordTokenizer(), target_tokens=6, overlap_tokens=1).chunks(
-        "id", "source.pdf", (ExtractedPage(1, text, text),), "v1")
+        "id", "source.pdf", (ExtractedPage(1, text, text),), "v1"
+    )
     assert chunks[0].text == "one two three four"
     assert chunks[-1].text.endswith("ten")
 

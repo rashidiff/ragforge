@@ -1,9 +1,10 @@
 """Persistent hybrid retrieval and bounded source selection from one immutable generation."""
+
+import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
-from typing import Callable
 
 from .chunking import Chunk
 from .lexical_index import LexicalIndex
@@ -34,17 +35,27 @@ class HybridSnapshot:
     @classmethod
     def build(cls, version: str, identity: dict, chunks: list[Chunk], vectors):
         identifiers = [chunk.chunk_id for chunk in chunks]
-        return cls(version, dict(identity), tuple(chunks), VectorIndex.build(vectors, identifiers),
-                   LexicalIndex(identifiers, [chunk.text for chunk in chunks]))
+        return cls(
+            version,
+            dict(identity),
+            tuple(chunks),
+            VectorIndex.build(vectors, identifiers),
+            LexicalIndex(identifiers, [chunk.text for chunk in chunks]),
+        )
 
     def save(self, directory: Path):
         self.vector.save(directory)
         self.lexical.save(directory)
-        (directory / "chunks.jsonl").write_text("".join(
-            json.dumps(chunk.record(), ensure_ascii=False) + "\n" for chunk in self.chunks), encoding="utf-8")
-        manifest = {"schema_version": 1, "version": self.version,
-                    "embedding_identity": self.embedding_identity,
-                    "hashes": {name: sha256((directory / name).read_bytes()).hexdigest() for name in FILES}}
+        (directory / "chunks.jsonl").write_text(
+            "".join(json.dumps(chunk.record(), ensure_ascii=False) + "\n" for chunk in self.chunks),
+            encoding="utf-8",
+        )
+        manifest = {
+            "schema_version": 1,
+            "version": self.version,
+            "embedding_identity": self.embedding_identity,
+            "hashes": {name: sha256((directory / name).read_bytes()).hexdigest() for name in FILES},
+        }
         (directory / "generation.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     @classmethod
@@ -58,24 +69,43 @@ class HybridSnapshot:
                 raise ValueError("Missing or unsafe index generation file")
             if sha256(path.read_bytes()).hexdigest() != manifest["hashes"][name]:
                 raise ValueError("Index checksum mismatch; rebuild from original PDFs")
-        chunks = tuple(Chunk(**json.loads(line)) for line in
-                       (directory / "chunks.jsonl").read_text(encoding="utf-8").splitlines())
+        chunks = tuple(
+            Chunk(**json.loads(line))
+            for line in (directory / "chunks.jsonl").read_text(encoding="utf-8").splitlines()
+        )
         vector, lexical = VectorIndex.load(directory), LexicalIndex.load(directory)
         ids = tuple(chunk.chunk_id for chunk in chunks)
-        if ids != vector.chunk_ids or ids != lexical.chunk_ids or tuple(chunk.text for chunk in chunks) != lexical.texts:
+        if (
+            ids != vector.chunk_ids
+            or ids != lexical.chunk_ids
+            or tuple(chunk.text for chunk in chunks) != lexical.texts
+        ):
             raise ValueError("Index generation contains mismatched mappings")
         for chunk in chunks:
-            if sha256(chunk.text.encode("utf-8")).hexdigest() != chunk.sha256 or chunk.page_start < 1 or chunk.page_end < chunk.page_start:
+            if (
+                sha256(chunk.text.encode("utf-8")).hexdigest() != chunk.sha256
+                or chunk.page_start < 1
+                or chunk.page_end < chunk.page_start
+            ):
                 raise ValueError("Chunk provenance is invalid")
         return cls(manifest["version"], manifest["embedding_identity"], chunks, vector, lexical)
 
-    def search(self, query: str, query_vector, active_document_ids: set[str],
-               candidate_count: int = 20, snippet_count: int = 6, token_budget: int = 4000,
-               count_tokens: Callable[[str], int] | None = None) -> list[dict]:
+    def search(
+        self,
+        query: str,
+        query_vector,
+        active_document_ids: set[str],
+        candidate_count: int = 20,
+        snippet_count: int = 6,
+        token_budget: int = 4000,
+        count_tokens: Callable[[str], int] | None = None,
+    ) -> list[dict]:
         if not query.strip() or min(candidate_count, snippet_count, token_budget) < 1:
             raise ValueError("A nonempty query and positive retrieval budgets are required")
         by_id = {chunk.chunk_id: chunk for chunk in self.chunks}
-        allowed = {chunk.chunk_id for chunk in self.chunks if chunk.document_id in active_document_ids}
+        allowed = {
+            chunk.chunk_id for chunk in self.chunks if chunk.document_id in active_document_ids
+        }
         if not allowed:
             return []
         dense = self.vector.search(query_vector, candidate_count, allowed)
@@ -91,8 +121,15 @@ class HybridSnapshot:
                 continue
             seen.add(key)
             used += cost
-            sources.append({**chunk.record(), "page": chunk.page_start, "score": score,
-                            "index_version": self.version, "available": True})
+            sources.append(
+                {
+                    **chunk.record(),
+                    "page": chunk.page_start,
+                    "score": score,
+                    "index_version": self.version,
+                    "available": True,
+                }
+            )
             if len(sources) >= snippet_count:
                 break
         return sources

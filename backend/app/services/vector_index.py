@@ -1,4 +1,5 @@
 """Local FAISS inner-product search over normalized vectors and stable chunk IDs."""
+
 import json
 from pathlib import Path
 
@@ -13,6 +14,7 @@ class VectorIndex:
     def build(cls, vectors, chunk_ids: list[str]):
         import faiss
         import numpy as np
+
         matrix = np.ascontiguousarray(vectors, dtype="float32")
         if matrix.ndim != 2 or matrix.shape[0] != len(chunk_ids) or matrix.shape[1] < 1:
             raise ValueError("Invalid vector matrix")
@@ -27,26 +29,34 @@ class VectorIndex:
 
     def save(self, directory: Path):
         import faiss
+
         directory.mkdir(parents=True, exist_ok=True)
         faiss.write_index(self.index, str(directory / "faiss.index"))
-        (directory / "faiss_ids.json").write_text(json.dumps(list(self.chunk_ids)), encoding="utf-8")
+        (directory / "faiss_ids.json").write_text(
+            json.dumps(list(self.chunk_ids)), encoding="utf-8"
+        )
 
     @classmethod
     def load(cls, directory: Path):
         import faiss
         import numpy as np
+
         # Caller verifies generation file hashes before invoking FAISS deserialization.
         chunk_ids = json.loads((directory / "faiss_ids.json").read_text(encoding="utf-8"))
-        if not isinstance(chunk_ids, list) or not all(isinstance(value, str) for value in chunk_ids):
+        if not isinstance(chunk_ids, list) or not all(
+            isinstance(value, str) for value in chunk_ids
+        ):
             raise ValueError("Invalid chunk mapping")
         index = faiss.read_index(str(directory / "faiss.index"))
         if not hasattr(index, "id_map") or not np.array_equal(
-                faiss.vector_to_array(index.id_map), np.arange(len(chunk_ids), dtype="int64")):
+            faiss.vector_to_array(index.id_map), np.arange(len(chunk_ids), dtype="int64")
+        ):
             raise ValueError("Vector IDs do not match the stable mapping")
         return cls(index, chunk_ids)
 
     def search(self, query, top_k: int, allowed: set[str] | None = None) -> list[tuple[str, float]]:
         import numpy as np
+
         if top_k < 1:
             raise ValueError("top_k must be positive")
         vector = np.asarray(query, dtype="float32").reshape(1, -1)

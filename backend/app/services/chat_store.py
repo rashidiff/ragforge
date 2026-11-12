@@ -1,9 +1,10 @@
 """Chat metadata and explicit, isolated deletion of canonical message history."""
+
 from __future__ import annotations
 
-from copy import deepcopy
-from datetime import datetime, timezone
 import json
+from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -12,7 +13,7 @@ from .state_store import JsonState, StateCorruptionError, durable_replace
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class ChatNotFoundError(LookupError):
@@ -23,8 +24,9 @@ class ChatStore:
     def __init__(self, data_dir: Path, history: HistoryStore):
         self.history = history
         self.state = JsonState(data_dir / "state/chats.json", {"schema_version": 1, "chats": {}})
-        self.compactions = JsonState(data_dir / "state/compactions.json",
-                                     {"schema_version": 1, "chats": {}})
+        self.compactions = JsonState(
+            data_dir / "state/compactions.json", {"schema_version": 1, "chats": {}}
+        )
 
     def _chats(self, state: dict) -> dict:
         chats = state.get("chats")
@@ -38,9 +40,13 @@ class ChatStore:
     def list(self) -> list[dict]:
         with self.state.lock:
             values = self._chats(self.state.read()).values()
-            return deepcopy(sorted((chat for chat in values if not chat.get("deleted_at")),
-                                   key=lambda chat: (chat["updated_at"], chat["chat_id"]),
-                                   reverse=True))
+            return deepcopy(
+                sorted(
+                    (chat for chat in values if not chat.get("deleted_at")),
+                    key=lambda chat: (chat["updated_at"], chat["chat_id"]),
+                    reverse=True,
+                )
+            )
 
     def get(self, chat_id: str) -> dict:
         try:
@@ -56,8 +62,9 @@ class ChatStore:
     def create(self, title: str | None = None) -> dict:
         title = self._title(title) if title is not None else "New chat"
         stamp = now()
-        chat = dict(chat_id=str(uuid4()), title=title, created_at=stamp,
-                    updated_at=stamp, deleted_at=None)
+        chat = dict(
+            chat_id=str(uuid4()), title=title, created_at=stamp, updated_at=stamp, deleted_at=None
+        )
         self.state.update(lambda state: self._chats(state).__setitem__(chat["chat_id"], chat))
         return deepcopy(chat)
 
@@ -71,10 +78,12 @@ class ChatStore:
         title = self._title(title)
         with self.state.lock:
             self.get(chat_id)
+
             def mutate(state):
                 chat = self._chats(state)[chat_id]
                 chat.update(title=title, updated_at=now())
                 return deepcopy(chat)
+
             return self.state.update(mutate)
 
     def messages(self, chat_id: str) -> list[dict]:
@@ -87,19 +96,23 @@ class ChatStore:
         with self.state.lock:
             self.get(chat_id)
             record = self.history.append_message(chat_id, request_id, role, content, **options)
+
             def mutate(state):
                 chat = self._chats(state)[chat_id]
                 if role == "user" and chat["title"] == "New chat":
                     chat["title"] = " ".join(content.split())[:80] or "New chat"
                 chat["updated_at"] = now()
+
             self.state.update(mutate)
             return record
 
     def delete(self, chat_id: str) -> None:
         with self.state.lock:
             self.get(chat_id)
+
             def tombstone(state):
                 self._chats(state)[chat_id].update(deleted_at=now(), gc_pending=True)
+
             self.state.update(tombstone)
             self._collect(chat_id)
 
@@ -115,17 +128,23 @@ class ChatStore:
             self.history.recover()
             if self.history.path.exists():
                 original = self.history.path.read_bytes()
-                retained = b"".join(line for line in original.splitlines(keepends=True)
-                                    if json.loads(line).get("chat_id") != chat_id)
+                retained = b"".join(
+                    line
+                    for line in original.splitlines(keepends=True)
+                    if json.loads(line).get("chat_id") != chat_id
+                )
                 if retained != original:
                     backup = self.history.path.with_name(
-                        self.history.path.name + f".before-delete-{uuid4()}.bak")
+                        self.history.path.name + f".before-delete-{uuid4()}.bak"
+                    )
                     durable_replace(backup, original)
                     durable_replace(self.history.path, retained)
+
             def forget_memory(state):
                 chats = state.get("chats")
                 if not isinstance(chats, dict):
                     raise StateCorruptionError("Compaction metadata is corrupt")
                 chats.pop(chat_id, None)
+
             self.compactions.update(forget_memory)
             self.state.update(lambda state: self._chats(state)[chat_id].update(gc_pending=False))

@@ -1,4 +1,5 @@
 """Validated, non-secret configuration. Importing this module creates no files."""
+
 from pathlib import Path
 from typing import Literal
 
@@ -57,9 +58,15 @@ class Settings(BaseSettings):
         from urllib.parse import urlsplit
 
         parsed = urlsplit(value)
-        if (parsed.scheme != "http" or parsed.hostname != "127.0.0.1"
-                or parsed.username or parsed.password or parsed.path
-                or parsed.query or parsed.fragment):
+        if (
+            parsed.scheme != "http"
+            or parsed.hostname != "127.0.0.1"
+            or parsed.username
+            or parsed.password
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
             raise ValueError("Development origin must be an HTTP 127.0.0.1 origin without a path")
         if parsed.port is None:
             raise ValueError("Development origin must include its port")

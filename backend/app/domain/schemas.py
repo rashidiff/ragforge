@@ -1,4 +1,5 @@
 """Public API models. Credentials never belong in response or history schemas."""
+
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
@@ -199,13 +200,18 @@ class SettingsUpdate(Contract):
         if value is None or not value.strip():
             return None
         from urllib.parse import urlsplit
+
         normalized = value.strip().rstrip("/")
         parsed = urlsplit(normalized)
         if any(character.isspace() for character in normalized) or "\\" in normalized:
             raise ValueError("Compatible endpoint URL contains invalid characters")
         local_http = parsed.hostname in {"127.0.0.1", "localhost", "::1"}
-        if (parsed.scheme != "https" and not (parsed.scheme == "http" and local_http)) or not parsed.hostname:
-            raise ValueError("Compatible endpoint must use HTTPS (HTTP is allowed only for loopback)")
+        if (
+            parsed.scheme != "https" and not (parsed.scheme == "http" and local_http)
+        ) or not parsed.hostname:
+            raise ValueError(
+                "Compatible endpoint must use HTTPS (HTTP is allowed only for loopback)"
+            )
         if parsed.username or parsed.password or parsed.query or parsed.fragment:
             raise ValueError("Compatible endpoint cannot contain credentials, query or fragment")
         try:

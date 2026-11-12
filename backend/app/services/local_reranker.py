@@ -1,6 +1,7 @@
 """Optional CPU-only multilingual cross-encoder reranking for local candidates."""
+
+from collections.abc import Callable
 from threading import RLock
-from typing import Callable
 
 
 class RerankerError(RuntimeError):
@@ -28,22 +29,24 @@ class LocalReranker:
                         from sentence_transformers import CrossEncoder
                     except ImportError as exc:
                         raise RerankerError(
-                            "Install the local RAG dependencies to enable reranking") from exc
+                            "Install the local RAG dependencies to enable reranking"
+                        ) from exc
                     factory = CrossEncoder
                 try:
-                    self._model = factory(self.model_name, device="cpu",
-                                          trust_remote_code=False)
+                    self._model = factory(self.model_name, device="cpu", trust_remote_code=False)
                 except Exception as exc:
                     raise RerankerError(
-                        "The configured local reranker could not be loaded") from exc
+                        "The configured local reranker could not be loaded"
+                    ) from exc
             return self._model
 
     def rank(self, query: str, candidates: list[dict]) -> list[dict]:
         if not candidates:
             return []
         try:
-            scores = self.model.predict([(query, item["text"]) for item in candidates],
-                                        show_progress_bar=False)
+            scores = self.model.predict(
+                [(query, item["text"]) for item in candidates], show_progress_bar=False
+            )
             values = [float(score) for score in scores]
             if len(values) != len(candidates):
                 raise ValueError("Reranker returned a mismatched score count")
@@ -51,5 +54,9 @@ class LocalReranker:
             raise
         except Exception as exc:
             raise RerankerError("Local reranking failed") from exc
-        return [item for _, item in sorted(zip(values, candidates),
-                                           key=lambda pair: (-pair[0], pair[1]["chunk_id"]))]
+        return [
+            item
+            for _, item in sorted(
+                zip(values, candidates), key=lambda pair: (-pair[0], pair[1]["chunk_id"])
+            )
+        ]

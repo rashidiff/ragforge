@@ -4,21 +4,39 @@ import json
 import httpx
 import pytest
 
-from app.llm.base import (Cancellation, Capabilities, ConversationMessage,
-                          GenerationRequest, ProviderError)
+from app.llm.base import (
+    Cancellation,
+    Capabilities,
+    ConversationMessage,
+    GenerationRequest,
+    ProviderError,
+)
 from app.llm.gemini import GeminiAdapter
 
 
 def request(*, tools=False):
-    return GenerationRequest("models/gemini-configured", "Canonical system", "memory",
-        (ConversationMessage("u1", "user", "Earlier"),
-         ConversationMessage("a1", "assistant", "Earlier answer")), (), "u2", "Question",
-        Capabilities(32000, 2000, tools=True, usage=True), 500, tools_enabled=tools)
+    return GenerationRequest(
+        "models/gemini-configured",
+        "Canonical system",
+        "memory",
+        (
+            ConversationMessage("u1", "user", "Earlier"),
+            ConversationMessage("a1", "assistant", "Earlier answer"),
+        ),
+        (),
+        "u2",
+        "Question",
+        Capabilities(32000, 2000, tools=True, usage=True),
+        500,
+        tools_enabled=tools,
+    )
 
 
 def adapter_for(handler):
-    return GeminiAdapter("https://provider.test/v1beta", client_factory=lambda **kw:
-                         httpx.AsyncClient(transport=httpx.MockTransport(handler), **kw))
+    return GeminiAdapter(
+        "https://provider.test/v1beta",
+        client_factory=lambda **kw: httpx.AsyncClient(transport=httpx.MockTransport(handler), **kw),
+    )
 
 
 def sse(*items):
@@ -32,12 +50,26 @@ def test_gemini_native_sse_role_mapping_streamed_text_and_usage():
         capture["url"] = str(req.url)
         capture["headers"] = dict(req.headers)
         capture["body"] = json.loads(req.content)
-        return httpx.Response(200, headers={"content-type": "text/event-stream"}, text=sse(
-            {"candidates": [{"content": {"role": "model", "parts": [{"text": "Bonjour"}]}}]},
-            {"candidates": [{"content": {"role": "model", "parts": [{"text": "!"}]},
-                             "finishReason": "STOP"}],
-             "usageMetadata": {"promptTokenCount": 12, "candidatesTokenCount": 3,
-                                "totalTokenCount": 15}}))
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            text=sse(
+                {"candidates": [{"content": {"role": "model", "parts": [{"text": "Bonjour"}]}}]},
+                {
+                    "candidates": [
+                        {
+                            "content": {"role": "model", "parts": [{"text": "!"}]},
+                            "finishReason": "STOP",
+                        }
+                    ],
+                    "usageMetadata": {
+                        "promptTokenCount": 12,
+                        "candidatesTokenCount": 3,
+                        "totalTokenCount": 15,
+                    },
+                },
+            ),
+        )
 
     async def scenario():
         events = []
@@ -63,10 +95,30 @@ def test_gemini_function_call_is_constrained_to_library_tools():
 
     def handler(req):
         capture["body"] = json.loads(req.content)
-        return httpx.Response(200, headers={"content-type": "text/event-stream"}, text=sse(
-            {"candidates": [{"content": {"parts": [{"functionCall": {
-                "id": "fc-1", "name": "search_library", "args": {
-                    "query": "deadline", "top_k": 5}}}]}, "finishReason": "STOP"}]}))
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            text=sse(
+                {
+                    "candidates": [
+                        {
+                            "content": {
+                                "parts": [
+                                    {
+                                        "functionCall": {
+                                            "id": "fc-1",
+                                            "name": "search_library",
+                                            "args": {"query": "deadline", "top_k": 5},
+                                        }
+                                    }
+                                ]
+                            },
+                            "finishReason": "STOP",
+                        }
+                    ]
+                }
+            ),
+        )
 
     async def scenario():
         result = []
@@ -77,16 +129,22 @@ def test_gemini_function_call_is_constrained_to_library_tools():
     result = asyncio.run(scenario())
     call = next(item.tool_call for item in result if item.kind == "tool_call")
     assert (call.name, call.arguments, call.call_id) == (
-        "search_library", {"query": "deadline", "top_k": 5}, "fc-1")
+        "search_library",
+        {"query": "deadline", "top_k": 5},
+        "fc-1",
+    )
     assert {item["name"] for item in capture["body"]["tools"][0]["functionDeclarations"]} == {
-        "search_library", "get_source_excerpt"}
+        "search_library",
+        "get_source_excerpt",
+    }
     assert result[-1].finish_reason == "tool_calls"
 
 
 def test_gemini_error_model_validation_and_incomplete_stream():
     def error(req):
-        return httpx.Response(400, json={"error": {"status": "INVALID_ARGUMENT",
-                                                     "message": "never reveal key"}})
+        return httpx.Response(
+            400, json={"error": {"status": "INVALID_ARGUMENT", "message": "never reveal key"}}
+        )
 
     async def failed():
         with pytest.raises(ProviderError) as failure:
@@ -99,13 +157,17 @@ def test_gemini_error_model_validation_and_incomplete_stream():
         bad = request()
         object.__setattr__(bad, "model", "../../secret")
         with pytest.raises(ProviderError, match="valid Gemini model"):
-            async for _ in adapter_for(lambda req: pytest.fail("invalid model reached network"))\
-                    .stream(bad, "key", Cancellation()):
+            async for _ in adapter_for(
+                lambda req: pytest.fail("invalid model reached network")
+            ).stream(bad, "key", Cancellation()):
                 pass
 
     def no_terminal(req):
-        return httpx.Response(200, headers={"content-type": "text/event-stream"},
-                              text=sse({"candidates": [{"content": {"parts": [{"text": "partial"}]}}]}))
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            text=sse({"candidates": [{"content": {"parts": [{"text": "partial"}]}}]}),
+        )
 
     async def incomplete():
         with pytest.raises(ProviderError, match="ended before completion"):

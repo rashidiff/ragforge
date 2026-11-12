@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-import pytest
 
 from app.config import Settings
 from app.main import create_app
@@ -11,11 +10,16 @@ from app.services.pdf_ingestion import LibraryStore, ValidatedPdf
 
 def make_document(path: Path):
     import pymupdf
+
     with pymupdf.open() as document:
         page = document.new_page()
-        page.insert_text((72, 72), "First page. Contract identifier ABC-104. Table: Deadline 15 days.")
+        page.insert_text(
+            (72, 72), "First page. Contract identifier ABC-104. Table: Deadline 15 days."
+        )
         page = document.new_page()
-        page.insert_text((72, 72), "Deuxieme page. Le contrat contient des clauses et des obligations.")
+        page.insert_text(
+            (72, 72), "Deuxieme page. Le contrat contient des clauses et des obligations."
+        )
         document.new_page()  # Image-only/empty extraction must not be silently accepted as indexed.
         document.save(path)
 
@@ -33,8 +37,10 @@ def test_page_provenance_and_sparse_warning(tmp_path):
 
 
 def test_multilingual_search_normalization_does_not_mutate_source(tmp_path):
-    from app.services.pdf_extraction import ExtractedPage
     import unicodedata
+
+    from app.services.pdf_extraction import ExtractedPage
+
     text = "فارسی français English cafe\u0301"
     page = ExtractedPage(12, text, unicodedata.normalize("NFC", text))
     assert page.text == text
@@ -53,12 +59,18 @@ def test_enabled_local_ocr_replaces_sparse_page_text_and_reports_progress(tmp_pa
         def check_availability(self, languages):
             assert languages == "eng+fra+fas"
             return OcrAvailability(True, "local-tesseract", ("eng", "fra", "fas"))
+
         def recognize_page(self, page, languages, availability):
             assert availability.available
             return "Scanned Persian passage with enough searchable text."
 
-    result = extract_pages(path, ocr_enabled=True, ocr_languages="eng+fra+fas",
-        ocr_engine=FakeOcr(), on_ocr_page=lambda page, total: progress.append((page, total)))
+    result = extract_pages(
+        path,
+        ocr_enabled=True,
+        ocr_languages="eng+fra+fas",
+        ocr_engine=FakeOcr(),
+        on_ocr_page=lambda page, total: progress.append((page, total)),
+    )
     assert result.needs_ocr is False
     assert "Scanned Persian passage" in result.pages[2].text
     assert any("OCR extracted text" in warning for warning in result.pages[2].warnings)
@@ -67,6 +79,7 @@ def test_enabled_local_ocr_replaces_sparse_page_text_and_reports_progress(tmp_pa
 
 def test_ocr_disabled_or_unavailable_keeps_sparse_scan_warned(tmp_path):
     from app.services.ocr import OcrAvailability
+
     path = tmp_path / "scan.pdf"
     make_document(path)
 
@@ -80,8 +93,14 @@ def test_ocr_disabled_or_unavailable_keeps_sparse_scan_warned(tmp_path):
 
     class MissingLanguage:
         def check_availability(self, languages):
-            return OcrAvailability(False, "tesseract", ("eng", "fas"), ("fas",),
-                "Local OCR language packs are missing: fas.")
+            return OcrAvailability(
+                False,
+                "tesseract",
+                ("eng", "fas"),
+                ("fas",),
+                "Local OCR language packs are missing: fas.",
+            )
+
         def recognize_page(self, *args):
             raise AssertionError("OCR must be skipped when a configured language is missing")
 
@@ -93,11 +112,16 @@ def test_ocr_disabled_or_unavailable_keeps_sparse_scan_warned(tmp_path):
 
 def test_tesseract_availability_checks_executable_and_requested_language_packs(monkeypatch):
     import subprocess
+
     from app.services.ocr import LocalTesseract
 
     monkeypatch.setattr("app.services.ocr.shutil.which", lambda name: "C:/tools/tesseract.exe")
-    monkeypatch.setattr("app.services.ocr.subprocess.run", lambda *args, **kwargs:
-        subprocess.CompletedProcess(args[0], 0, stdout="List of available languages (2):\neng\nfra\n", stderr=""))
+    monkeypatch.setattr(
+        "app.services.ocr.subprocess.run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout="List of available languages (2):\neng\nfra\n", stderr=""
+        ),
+    )
     result = LocalTesseract().check_availability("eng+fra+fas")
     assert result.available is False
     assert result.executable == "C:/tools/tesseract.exe"
@@ -107,6 +131,7 @@ def test_tesseract_availability_checks_executable_and_requested_language_packs(m
 
 def test_tesseract_missing_executable_is_a_clear_nonfatal_warning(monkeypatch):
     from app.services.ocr import LocalTesseract
+
     monkeypatch.setattr("app.services.ocr.shutil.which", lambda name: None)
     result = LocalTesseract().check_availability("eng")
     assert result.available is False
@@ -117,6 +142,7 @@ def test_tesseract_missing_executable_is_a_clear_nonfatal_warning(monkeypatch):
 def test_preview_uses_managed_id_and_rejects_deleted_document(tmp_path):
     from hashlib import sha256
     from uuid import uuid4
+
     directory = tmp_path / "library/pdfs"
     directory.mkdir(parents=True)
     temporary = directory / "original.upload"
@@ -124,7 +150,11 @@ def test_preview_uses_managed_id_and_rejects_deleted_document(tmp_path):
     content = temporary.read_bytes()
     identifier = str(uuid4())
     store = LibraryStore(tmp_path)
-    store.accept(ValidatedPdf(temporary, identifier, "source.pdf", sha256(content).hexdigest(), len(content), 3))
+    store.accept(
+        ValidatedPdf(
+            temporary, identifier, "source.pdf", sha256(content).hexdigest(), len(content), 3
+        )
+    )
     config = Settings(_env_file=None, data_dir=tmp_path)
     with TestClient(create_app(config), base_url="http://127.0.0.1:8000") as client:
         response = client.get(f"/api/library/{identifier}/pdf")

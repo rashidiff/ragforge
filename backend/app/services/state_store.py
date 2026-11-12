@@ -1,10 +1,12 @@
 """Atomic local snapshots with explicit corruption and recovery semantics."""
-from copy import deepcopy
+
 import json
 import os
+from collections.abc import Callable
+from copy import deepcopy
 from pathlib import Path
 from threading import RLock
-from typing import Callable, TypeVar
+from typing import TypeVar
 from uuid import uuid4
 
 T = TypeVar("T")
@@ -63,7 +65,8 @@ class JsonState:
             result = mutate(state)
             content = json.dumps(state, ensure_ascii=False, allow_nan=False).encode("utf-8")
             if self.path.exists():
-                durable_replace(self.path.with_suffix(self.path.suffix + ".bak"),
-                                self.path.read_bytes())
+                durable_replace(
+                    self.path.with_suffix(self.path.suffix + ".bak"), self.path.read_bytes()
+                )
             durable_replace(self.path, content)
             return result

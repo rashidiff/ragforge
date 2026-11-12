@@ -19,8 +19,11 @@ def test_cross_encoder_ranks_local_candidate_text_and_loads_on_cpu():
     reranker = LocalReranker("fixture/multilingual-cross-encoder", factory)
     candidates = [{"chunk_id": "a", "text": "weak"}, {"chunk_id": "b", "text": "strong"}]
     assert [row["chunk_id"] for row in reranker.rank("question فارسی", candidates)] == ["b", "a"]
-    assert loaded == {"name": "fixture/multilingual-cross-encoder", "device": "cpu",
-                      "trust_remote_code": False}
+    assert loaded == {
+        "name": "fixture/multilingual-cross-encoder",
+        "device": "cpu",
+        "trust_remote_code": False,
+    }
 
 
 def test_rank_is_stable_for_equal_scores():
@@ -34,5 +37,7 @@ def test_rank_is_stable_for_equal_scores():
 
 
 def test_empty_candidate_list_does_not_load_model():
-    reranker = LocalReranker("fixture", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError()))
+    reranker = LocalReranker(
+        "fixture", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError())
+    )
     assert reranker.rank("question", []) == []

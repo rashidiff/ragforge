@@ -1,4 +1,5 @@
 """Read editable Markdown at use time; versions identify exact UTF-8 prompt bytes."""
+
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -29,7 +30,9 @@ class PromptLoader:
             content = path.read_bytes()
             text = content.decode("utf-8")
         except (OSError, UnicodeError) as exc:
-            raise PromptError(f"Cannot read the {name} UTF-8 Markdown prompt. Restore it in prompts/.") from exc
+            raise PromptError(
+                f"Cannot read the {name} UTF-8 Markdown prompt. Restore it in prompts/."
+            ) from exc
         if not text.strip():
             raise PromptError(f"The {name} prompt is empty. Restore its Markdown instructions.")
         return Prompt(text=text, version=sha256(content).hexdigest())
