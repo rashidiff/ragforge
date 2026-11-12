@@ -54,7 +54,7 @@ jobs:
 
       - name: Type check backend
         if: ${{ !cancelled() }}
-        run: python -m mypy backend/app
+        run: python -m mypy --config-file backend/pyproject.toml backend/app
 
   frontend:
     name: Frontend tests and build

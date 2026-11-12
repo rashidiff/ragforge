@@ -55,7 +55,7 @@ def _model_name(model: str) -> str:
 
 
 def _contents(request: GenerationRequest) -> list[dict[str, Any]]:
-    result = [
+    result: list[dict[str, Any]] = [
         {"role": "model" if item.role == "assistant" else "user", "parts": [{"text": item.content}]}
         for item in request.tail
     ]

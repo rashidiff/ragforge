@@ -1,6 +1,7 @@
 """Validate provider source markers against request evidence and current Library state."""
 
 import re
+from uuid import UUID
 
 from app.domain.schemas import Citation
 from app.llm.base import ProviderError, SourceExcerpt
@@ -46,7 +47,7 @@ class CitationValidator:
                 )
             citation = Citation(
                 chunk_id=chunk_id,
-                document_id=original.document_id,
+                document_id=UUID(original.document_id),
                 filename=original.filename,
                 page_start=original.page_start,
                 page_end=original.page_end,

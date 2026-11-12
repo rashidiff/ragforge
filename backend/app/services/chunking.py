@@ -49,7 +49,7 @@ class Chunker:
         pages: tuple[ExtractedPage, ...],
         embedding_model_version: str,
     ) -> list[Chunk]:
-        result = []
+        result: list[Chunk] = []
         for page in pages:
             if not page.text.strip():
                 continue

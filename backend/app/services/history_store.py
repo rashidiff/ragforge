@@ -7,7 +7,7 @@ from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
-_LOCKS = {}
+_LOCKS: dict[str, RLock] = {}
 _GUARD = RLock()
 
 

@@ -39,7 +39,7 @@ class Cancellation:
 
 async def next_or_cancel(iterator: AsyncIterator[Any], cancellation: Cancellation):
     """Await one upstream frame while remaining promptly abortable without timing out reads."""
-    read_task = asyncio.create_task(anext(iterator))
+    read_task = asyncio.ensure_future(anext(iterator))
     cancel_task = asyncio.create_task(cancellation.wait())
     try:
         done, _ = await asyncio.wait({read_task, cancel_task}, return_when=asyncio.FIRST_COMPLETED)

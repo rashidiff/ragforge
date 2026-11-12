@@ -7,7 +7,7 @@ logical provider contract stay explicit. Only the two local Library tools are se
 import asyncio
 import json
 from collections.abc import AsyncIterator, Callable
-from typing import Any
+from typing import Any, Literal, cast
 
 from app.llm.base import (
     Cancellation,
@@ -237,7 +237,7 @@ class OpenAIAdapter(ProviderAdapter):
                             )
                         try:
                             arguments = json.loads(event.get("arguments", info["arguments"]))
-                            call = ToolCall(info["call_id"], info["name"], arguments)
+                            call = ToolCall(info["call_id"], cast(Literal["search_library", "get_source_excerpt"], info["name"]), arguments)
                         except (ValueError, TypeError, KeyError) as exc:
                             raise ProviderError(
                                 "invalid_tool_call", "OpenAI returned an invalid Library tool call"

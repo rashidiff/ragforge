@@ -5,6 +5,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, replace
+from collections.abc import Callable
 from uuid import uuid4
 
 from app.domain.schemas import MessageSubmission
@@ -14,9 +15,11 @@ from app.llm.base import (
     Capabilities,
     ConversationMessage,
     GenerationRequest,
+    ProviderAdapter,
     ProviderError,
     ProviderEvent,
     SourceExcerpt,
+    ToolCall,
     ToolExchange,
 )
 from app.llm.gemini import GeminiAdapter
@@ -324,7 +327,7 @@ class ChatOrchestrator:
         report = budget.measure(generation)
         if not report.fits:
             base = replace(generation, sources=())
-            selected_sources = []
+            selected_sources: list[SourceExcerpt] = []
             if budget.measure(base).fits:
                 for source in original_sources:
                     candidate = replace(base, sources=(*selected_sources, source))
@@ -419,14 +422,14 @@ class ChatOrchestrator:
         key = self.runtime.credentials.get(provider)
         if not key:
             raise ProviderError("missing_key", "Add a provider API key in Settings")
-        adapters = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
+        adapters: dict[str, Callable[..., ProviderAdapter]] = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
         if provider == "openai_compatible":
             endpoint = settings.get("compatible_base_url")
             if not endpoint:
                 raise ProviderError(
                     "endpoint_required", "Configure the compatible endpoint in Settings"
                 )
-            adapter = OpenAIAdapter(
+            adapter: ProviderAdapter = OpenAIAdapter(
                 base_url=endpoint, timeout=self.runtime.settings.request_timeout_seconds
             )
         else:
@@ -434,7 +437,7 @@ class ChatOrchestrator:
         text_parts: list[str] = []
         usage = None
         started = time.monotonic()
-        exchanges = []
+        exchanges: list[ToolExchange] = []
         all_sources = list(prepared.generation.sources)
         dispatcher = RetrievalToolDispatcher(self.runtime.index)
         tool_rounds = 0
@@ -456,7 +459,7 @@ class ChatOrchestrator:
                         "Additional Library results exceed the selected model's safe input budget. Retry with a narrower question or fewer sources.",
                         retryable=True,
                     )
-                calls = []
+                calls: list[ToolCall] = []
                 saw_event = False
                 try:
                     async for event in adapter.stream(request_generation, key, cancellation):
@@ -466,6 +469,8 @@ class ChatOrchestrator:
                         elif event.kind == "usage":
                             usage = event.usage
                         elif event.kind == "tool_call":
+                            if event.tool_call is None:
+                                raise ProviderError("invalid_tool_call", "Provider returned an empty tool call")
                             calls.append(event.tool_call)
                         elif event.kind == "done" and event.finish_reason == "tool_calls":
                             continue
@@ -668,12 +673,16 @@ class ChatOrchestrator:
                             item.chunk_id == chunk_id for item in all_sources
                         ):
                             continue
+                        page_start = source.get("page_start", source.get("page"))
+                        page_end = source.get("page_end", source.get("page"))
+                        if not isinstance(page_start, int) or not isinstance(page_end, int):
+                            continue
                         excerpt = SourceExcerpt(
                             chunk_id=chunk_id,
                             document_id=source["document_id"],
                             filename=source["filename"],
-                            page_start=source.get("page_start", source.get("page")),
-                            page_end=source.get("page_end", source.get("page")),
+                            page_start=page_start,
+                            page_end=page_end,
                             text=source["text"],
                             index_version=source["index_version"],
                         )

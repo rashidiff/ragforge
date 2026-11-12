@@ -32,3 +32,10 @@ pythonpath = ["."]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+[tool.mypy]
+python_version = '3.11'
+
+[[tool.mypy.overrides]]
+module = ['rank_bm25.*', 'sentence_transformers.*', 'keyring.*', 'tiktoken.*']
+ignore_missing_imports = true

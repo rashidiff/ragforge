@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import builtins
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
@@ -90,7 +91,7 @@ class ChatStore:
 
             return self.state.update(mutate)
 
-    def messages(self, chat_id: str) -> list[dict]:
+    def messages(self, chat_id: str) -> builtins.list[dict]:
         with self.state.lock:
             self.get(chat_id)
             return self.history.records(chat_id)

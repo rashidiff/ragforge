@@ -374,13 +374,16 @@ export function App() {
             typeof payload.page_end === "number" &&
             typeof payload.url === "string"
           ) {
-            const citation = { ...payload };
-            delete citation.request_id;
+            const citation: Citation = {
+              chunk_id: payload.chunk_id, document_id: payload.document_id,
+              filename: payload.filename, page_start: payload.page_start,
+              page_end: payload.page_end, url: payload.url,
+            };
             citations = [
               ...citations.filter(
                 (item) => item.chunk_id !== citation.chunk_id,
               ),
-              citation as Citation,
+              citation,
             ];
             setLiveAssistant((current) =>
               current ? { ...current, metadata: { citations } } : current,

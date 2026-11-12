@@ -1,15 +1,17 @@
 """Provider configuration and write-only credential routes."""
 
+from collections.abc import Callable
+
 from fastapi import APIRouter, HTTPException, Request
 
 from app.domain.schemas import AppSettings, ConnectionTestResult, SettingsUpdate
 from app.llm.anthropic import AnthropicAdapter
-from app.llm.base import Capabilities, ProviderError
+from app.llm.base import Capabilities, ProviderAdapter, ProviderError
 from app.llm.gemini import GeminiAdapter
 from app.llm.openai import OpenAIAdapter
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
-_ADAPTERS = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
+_ADAPTERS: dict[str, Callable[..., ProviderAdapter]] = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
 
 
 def _adapter(provider: str, values: dict, timeout: float):

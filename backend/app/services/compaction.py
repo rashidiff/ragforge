@@ -15,6 +15,7 @@ from app.llm.base import (
     Capabilities,
     ConversationMessage,
     GenerationRequest,
+    ProviderAdapter,
     ProviderError,
 )
 from app.llm.gemini import GeminiAdapter
@@ -423,15 +424,16 @@ class CompactionManager:
                     raise ProviderError(
                         "endpoint_required", "Configure the compatible endpoint in Settings"
                     )
-                adapter = OpenAIAdapter(
+                adapter: ProviderAdapter = OpenAIAdapter(
                     base_url=endpoint, timeout=self.runtime.settings.request_timeout_seconds
                 )
             else:
-                adapter_class = {
+                factories: dict[str, Callable[..., ProviderAdapter]] = {
                     "openai": OpenAIAdapter,
                     "anthropic": AnthropicAdapter,
                     "google": GeminiAdapter,
-                }[provider]
+                }
+                adapter_class = factories[provider]
                 adapter = adapter_class(timeout=self.runtime.settings.request_timeout_seconds)
             started = time.monotonic()
             self._set_status(

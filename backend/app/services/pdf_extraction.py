@@ -55,7 +55,7 @@ def extract_pages(
                 )
                 page_warnings = []
                 sparse = len("".join(text.split())) < sparse_character_threshold
-                if sparse and ocr_enabled:
+                if sparse and ocr_enabled and recognizer is not None:
                     if availability is None:
                         availability = recognizer.check_availability(ocr_languages)
                         if availability.warning:

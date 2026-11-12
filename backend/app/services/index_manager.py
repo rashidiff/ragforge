@@ -52,7 +52,7 @@ class IndexManager:
         self._lock, self._stop = RLock(), Event()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="local-index")
         self._busy = False
-        self._snapshot = None
+        self._snapshot: HybridSnapshot | None = None
         self._unavailable = None
         self._recover_jobs()
         self._restore()
@@ -129,7 +129,7 @@ class IndexManager:
                     "Embedding configuration changed. A full rebuild is required before search."
                 )
             return {
-                "index_version": self._snapshot.version if compatible else None,
+                "index_version": self._snapshot.version if compatible and self._snapshot is not None else None,
                 "ready": (not documents and not self._unavailable)
                 or (compatible and bool(self._active_ids(state, self._snapshot))),
                 "jobs": [jobs[job_id]]
@@ -400,7 +400,7 @@ class IndexManager:
         with self._lock:
             snapshot = self._snapshot
             encoder = self.embeddings
-            if not self._compatible(snapshot):
+            if snapshot is None or not self._compatible(snapshot):
                 raise IndexUnavailableError(
                     "Library index is unavailable or uses another embedding model. Rebuild it."
                 )
@@ -479,7 +479,7 @@ class IndexManager:
 
     def get_source_excerpt(self, chunk_id: str):
         with self._lock:
-            if not self._compatible(self._snapshot):
+            if self._snapshot is None or not self._compatible(self._snapshot):
                 raise IndexUnavailableError("Library index is unavailable")
             active = self._active_ids(self.library.manifest.read(), self._snapshot)
             for chunk in self._snapshot.chunks:

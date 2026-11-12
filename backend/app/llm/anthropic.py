@@ -48,7 +48,7 @@ _TOOLS = [
 
 
 def _messages(request: GenerationRequest) -> list[dict[str, Any]]:
-    result = [{"role": message.role, "content": message.content} for message in request.tail]
+    result: list[dict[str, Any]] = [{"role": message.role, "content": message.content} for message in request.tail]
     context = "\n\n".join(
         f"[Untrusted PDF source id={source.chunk_id}; file={source.filename}; "
         f"pages={source.page_start}-{source.page_end}]\n{source.text}"
@@ -227,9 +227,11 @@ class AnthropicAdapter(ProviderAdapter):
                         if delta.get("type") == "text_delta" and isinstance(delta.get("text"), str):
                             if delta["text"]:
                                 yield ProviderEvent("text", delta=delta["text"])
-                        elif delta.get("type") == "input_json_delta" and isinstance(index, int):
-                            if index in blocks:
-                                blocks[index]["json"] += delta.get("partial_json", "")
+                        elif (
+                            delta.get("type") == "input_json_delta"
+                            and isinstance(index, int) and index in blocks
+                        ):
+                            blocks[index]["json"] += delta.get("partial_json", "")
                     elif kind == "content_block_stop":
                         index = event.get("index")
                         info = blocks.pop(index, None) if isinstance(index, int) else None

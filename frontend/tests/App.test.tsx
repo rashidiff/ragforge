@@ -71,11 +71,10 @@ describe("foundation workspace", () => {
     const user = userEvent.setup();
     render(<App />);
     expect(
-      await screen.findByRole("button", { name: "فارسی", exact: true }),
+      await screen.findByRole("button", { name: "فارسی", }),
     ).toBeVisible();
     const library = screen.getByRole("button", {
       name: "Library",
-      exact: true,
     });
     library.focus();
     await user.keyboard("{Enter}");
@@ -104,7 +103,7 @@ describe("foundation workspace", () => {
       expect(api.renameChat).toHaveBeenCalledWith(chat.chat_id, "Français"),
     );
     await user.click(
-      screen.getByRole("button", { name: "New chat", exact: true }),
+      screen.getByRole("button", { name: "New chat", }),
     );
     await waitFor(() => expect(api.createChat).toHaveBeenCalledOnce());
   });
@@ -119,13 +118,13 @@ describe("foundation workspace", () => {
     expect(api.deleteChat).not.toHaveBeenCalled();
     const dialog = screen.getByRole("alertdialog");
     await user.click(
-      within(dialog).getByRole("button", { name: "Delete chat", exact: true }),
+      within(dialog).getByRole("button", { name: "Delete chat", }),
     );
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "Disk unavailable",
     );
     expect(
-      screen.getByRole("button", { name: "فارسی", exact: true, hidden: true }),
+      screen.getByRole("button", { name: "فارسی", hidden: true }),
     ).toBeInTheDocument();
   });
 
@@ -202,7 +201,7 @@ describe("foundation workspace", () => {
   it("persists theme and language preferences and applies Persian RTL direction", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByRole("button", { name: "New chat", exact: true });
+    await screen.findByRole("button", { name: "New chat", });
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Interface language" }),
       "fa",
@@ -214,7 +213,7 @@ describe("foundation workspace", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("local-rag-theme")).toBe("dark");
     expect(
-      screen.getByRole("button", { name: "گفت‌وگوی جدید", exact: true }),
+      screen.getByRole("button", { name: "گفت‌وگوی جدید", }),
     ).toBeVisible();
   });
 
@@ -248,7 +247,7 @@ describe("foundation workspace", () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(
-      screen.getByRole("button", { name: "New chat", exact: true }),
+      screen.getByRole("button", { name: "New chat", }),
     ).toHaveFocus();
     await user.keyboard("{Escape}");
     expect(toggle).toHaveAttribute("aria-expanded", "false");

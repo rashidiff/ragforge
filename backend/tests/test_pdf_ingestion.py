@@ -74,7 +74,6 @@ def test_malformed_and_encrypted_pdfs(tmp_path):
 def test_manifest_failure_does_not_publish_ready_document(tmp_path):
     store = LibraryStore(tmp_path)
     accepted = validate(tmp_path, pdf_bytes())
-    with patch.object(store.manifest, "update", side_effect=OSError("full disk")):
-        with pytest.raises(OSError):
-            store.accept(accepted)
+    with (patch.object(store.manifest, "update", side_effect=OSError("full disk")), pytest.raises(OSError)):
+        store.accept(accepted)
     assert store.list() == []

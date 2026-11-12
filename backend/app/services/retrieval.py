@@ -14,7 +14,7 @@ FILES = ("faiss.index", "faiss_ids.json", "bm25_index.json", "chunks.jsonl")
 
 
 def reciprocal_rank_fusion(*rankings: list[tuple[str, float]], constant: int = 60):
-    scores = {}
+    scores: dict[str, float] = {}
     for ranking in rankings:
         seen = set()
         for rank, (identifier, _) in enumerate(ranking, start=1):
