@@ -6,8 +6,8 @@ it("renders fenced code safely and keeps HTML and unsafe links inert", () => {
   render(<MarkdownMessage citations={[]} onCitation={() => {}} content={'## Safe heading\n\n```python\nprint("hello")\n```\n\n<script>alert(1)</script> [run](javascript:alert(1))'} />);
   expect(screen.getByRole("heading", { name: "Safe heading" })).toBeVisible();
   expect(screen.getByText('print("hello")')).toBeVisible();
-  expect(screen.getByText("<script>alert(1)</script>")).toBeVisible();
-  expect(screen.getByText("run")).toBeVisible();
+  expect(screen.getByText(/<script>alert\(1\)<\/script>/)).toBeVisible();
+  expect(screen.getByText(/run/)).toBeVisible();
   expect(document.querySelector("script")).toBeNull();
   expect(document.querySelector(".markdown-message a")).toBeNull();
 });

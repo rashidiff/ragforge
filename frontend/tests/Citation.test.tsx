@@ -27,7 +27,7 @@ it("renders validated source markers as citations and opens the exact-page sourc
 });
 
 it("does not turn an unvalidated citation marker into a source link", () => {
-  render(<ChatPage chat={chat} messages={[{ ...message, metadata: { citations: [] } }]
+  render(<ChatPage chat={chat} messages={[{ ...message, metadata: { citations: [] } }]}
     loading={false} onLibrary={() => {}} />);
   expect(screen.queryByRole("button", { name: /Open source/ })).toBeNull();
   expect(screen.getByText(/\[\[source:chunk-1\]\]/)).toBeVisible();
@@ -36,7 +36,7 @@ it("does not turn an unvalidated citation marker into a source link", () => {
 it("copies the assistant's exact answer text", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  const user = userEvent.setup();
+  const user = userEvent.setup({ writeToClipboard: false });
   render(<ChatPage chat={chat} messages={[message]} loading={false} onLibrary={() => {}} />);
   await user.click(screen.getByRole("button", { name: "Copy answer" }));
   expect(writeText).toHaveBeenCalledWith(message.content);

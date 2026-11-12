@@ -1,4 +1,6 @@
 """Chat metadata and explicit, isolated deletion of canonical message history."""
+from __future__ import annotations
+
 from copy import deepcopy
 from datetime import datetime, timezone
 import json

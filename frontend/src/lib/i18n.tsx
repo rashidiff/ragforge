@@ -50,19 +50,19 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
     "Extracting pages": "Extraction des pages", "Checking or running local OCR": "Vérification ou exécution de l’OCR local",
     "Chunking text": "Découpage du texte", "Embedding locally": "Vectorisation locale", "Publishing index": "Publication de l’index",
     "Ready": "Prêt", "Failed": "Échec", "Removing PDF": "Suppression du PDF",
-    "Delete this chat?": "Supprimer cette conversation ?", "Cancel": "Annuler", "Delete chat": "Supprimer la conversation", "Deleting…": "Suppression…",
+    "Delete this chat?": "Supprimer cette conversation ?",  "Delete chat": "Supprimer la conversation", "Deleting…": "Suppression…",
     "Local storage · No account": "Stockage local · Sans compte", "Conversation": "Conversation",
     "Loading conversation…": "Chargement de la conversation…", "You": "Vous", "Assistant": "Assistant",
     "Copy answer": "Copier la réponse", "Copied": "Copié", "Dismiss generation error": "Fermer l’erreur de génération",
     "Dismiss copy error": "Fermer l’erreur de copie", "Retry last response": "Réessayer la dernière réponse",
     "Retry memory update": "Réessayer la mise à jour de mémoire", "Message": "Message",
     "A workspace for your PDFs": "Un espace pour vos PDF", "Start with your documents.": "Commencez avec vos documents.",
-    "Open Library": "Ouvrir la bibliothèque", "Your documents, together.": "Vos documents, réunis.",
-    "Upload PDF": "Importer un PDF", "Rebuild index": "Reconstruire l’index", "Choose PDF file": "Choisir un fichier PDF",
+    "Open Library": "Ouvrir la bibliothèque", 
+      "Choose PDF file": "Choisir un fichier PDF",
     "Language model": "Modèle de langage", "Provider": "Fournisseur", "Model name": "Nom du modèle",
     "API key": "Clé API", "Save settings": "Enregistrer les paramètres", "Test connection": "Tester la connexion",
     "Remove key": "Supprimer la clé", "Enable optional local OCR": "Activer l’OCR local facultatif",
-    "Your workspace stays local.": "Votre espace reste local.", "Ask questions grounded in your active PDF Library.": "Posez des questions fondées sur vos PDF actifs.",
+     "Ask questions grounded in your active PDF Library.": "Posez des questions fondées sur vos PDF actifs.",
     "Your documents, in focus": "Vos documents, en évidence", "Preparing request…": "Préparation de la demande…",
     "Settings could not be loaded.": "Impossible de charger les paramètres.", "Settings could not be saved.": "Impossible d’enregistrer les paramètres.",
     "Settings saved. The API key was cleared from this form.": "Paramètres enregistrés. La clé API a été effacée du formulaire.",
@@ -139,8 +139,8 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
     "Copy answer": "کپی پاسخ", "Copied": "کپی شد", "Retry last response": "تلاش دوباره برای پاسخ",
     "Retry memory update": "تلاش دوباره برای به‌روزرسانی حافظه", "Message": "پیام",
     "A workspace for your PDFs": "فضایی برای PDFهای شما", "Start with your documents.": "با اسناد خود شروع کنید.",
-    "Open Library": "باز کردن کتابخانه", "Your documents, together.": "اسناد شما، در کنار هم.",
-    "Upload PDF": "بارگذاری PDF", "Rebuild index": "بازسازی نمایه", "Choose PDF file": "انتخاب فایل PDF",
+    "Open Library": "باز کردن کتابخانه", 
+      "Choose PDF file": "انتخاب فایل PDF",
     "Language model": "مدل زبانی", "Provider": "ارائه‌دهنده", "Model name": "نام مدل", "API key": "کلید API",
     "Save settings": "ذخیره تنظیمات", "Test connection": "آزمایش اتصال", "Remove key": "حذف کلید",
     "Enable optional local OCR": "فعال‌سازی OCR محلی اختیاری", "Your workspace stays local.": "فضای کاری شما محلی می‌ماند.",
@@ -178,7 +178,8 @@ interface LocaleContextValue { locale: Locale; t: (english: string) => string; }
 const LocaleContext = createContext<LocaleContextValue>({ locale: "en", t: (value) => value });
 
 export function translate(locale: Locale, english: string) {
-  return locale === "en" ? english : messages[locale][english] ?? english;
+  const defaults: Record<string, string> = {   };
+  return locale === "en" ? defaults[english] ?? english : messages[locale][english] ?? defaults[english] ?? english;
 }
 
 export function LocaleProvider({ locale, children }: { locale: Locale; children: ReactNode }) {

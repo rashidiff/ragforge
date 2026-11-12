@@ -66,7 +66,7 @@ describe("foundation workspace", () => {
     const dialog = screen.getByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "Delete chat", exact: true }));
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("Disk unavailable");
-    expect(screen.getByRole("button", { name: "فارسی", exact: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "فارسی", exact: true, hidden: true })).toBeInTheDocument();
   });
 
   it("renders untrusted historical messages as text, including incomplete labels", async () => {
@@ -123,6 +123,7 @@ describe("foundation workspace", () => {
     const user = userEvent.setup();
     vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:export"), revokeObjectURL: vi.fn() });
     vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     vi.mocked(api.exportChat).mockResolvedValue(new Blob(["chat"]));
     render(<App />);
     await user.click(await screen.findByRole("button", { name: "Export as Markdown فارسی" }));

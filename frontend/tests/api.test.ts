@@ -18,11 +18,11 @@ it("preserves safe API error categories for retry UI", async () => {
 });
 
 it("requests Markdown and coherent raw-history downloads as blobs", async () => {
-  const payload = new Blob(["Exact فارسی\n"]);
+  const payload = "Exact فارسی\n";
   const fetchMock = vi.fn().mockResolvedValue(new Response(payload, { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
-  await expect(api.exportChat("chat/id", "markdown")).resolves.toBeInstanceOf(Blob);
+  expect(await (await api.exportChat("chat/id", "markdown")).text()).toBe(payload);
   expect(fetchMock).toHaveBeenLastCalledWith("/api/chats/chat%2Fid/export?format=markdown");
-  await expect(api.backupHistory()).resolves.toBeInstanceOf(Blob);
+  expect(await (await api.backupHistory()).text()).toBe(payload);
   expect(fetchMock).toHaveBeenLastCalledWith("/api/history/backup");
 });
