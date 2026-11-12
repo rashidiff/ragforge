@@ -4,8 +4,8 @@ import asyncio
 import json
 import re
 import time
-from dataclasses import dataclass, replace
 from collections.abc import Callable
+from dataclasses import dataclass, replace
 from uuid import uuid4
 
 from app.domain.schemas import MessageSubmission
@@ -422,7 +422,11 @@ class ChatOrchestrator:
         key = self.runtime.credentials.get(provider)
         if not key:
             raise ProviderError("missing_key", "Add a provider API key in Settings")
-        adapters: dict[str, Callable[..., ProviderAdapter]] = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
+        adapters: dict[str, Callable[..., ProviderAdapter]] = {
+            "openai": OpenAIAdapter,
+            "anthropic": AnthropicAdapter,
+            "google": GeminiAdapter,
+        }
         if provider == "openai_compatible":
             endpoint = settings.get("compatible_base_url")
             if not endpoint:
@@ -470,7 +474,9 @@ class ChatOrchestrator:
                             usage = event.usage
                         elif event.kind == "tool_call":
                             if event.tool_call is None:
-                                raise ProviderError("invalid_tool_call", "Provider returned an empty tool call")
+                                raise ProviderError(
+                                    "invalid_tool_call", "Provider returned an empty tool call"
+                                )
                             calls.append(event.tool_call)
                         elif event.kind == "done" and event.finish_reason == "tool_calls":
                             continue

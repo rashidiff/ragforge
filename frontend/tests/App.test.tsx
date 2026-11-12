@@ -70,9 +70,7 @@ describe("foundation workspace", () => {
   it("loads chronological chats and navigates by keyboard", async () => {
     const user = userEvent.setup();
     render(<App />);
-    expect(
-      await screen.findByRole("button", { name: "فارسی", }),
-    ).toBeVisible();
+    expect(await screen.findByRole("button", { name: "فارسی" })).toBeVisible();
     const library = screen.getByRole("button", {
       name: "Library",
     });
@@ -102,9 +100,7 @@ describe("foundation workspace", () => {
     await waitFor(() =>
       expect(api.renameChat).toHaveBeenCalledWith(chat.chat_id, "Français"),
     );
-    await user.click(
-      screen.getByRole("button", { name: "New chat", }),
-    );
+    await user.click(screen.getByRole("button", { name: "New chat" }));
     await waitFor(() => expect(api.createChat).toHaveBeenCalledOnce());
   });
 
@@ -118,7 +114,7 @@ describe("foundation workspace", () => {
     expect(api.deleteChat).not.toHaveBeenCalled();
     const dialog = screen.getByRole("alertdialog");
     await user.click(
-      within(dialog).getByRole("button", { name: "Delete chat", }),
+      within(dialog).getByRole("button", { name: "Delete chat" }),
     );
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "Disk unavailable",
@@ -201,7 +197,7 @@ describe("foundation workspace", () => {
   it("persists theme and language preferences and applies Persian RTL direction", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByRole("button", { name: "New chat", });
+    await screen.findByRole("button", { name: "New chat" });
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Interface language" }),
       "fa",
@@ -212,9 +208,7 @@ describe("foundation workspace", () => {
     await user.click(screen.getByRole("button", { name: "پوسته تیره" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("local-rag-theme")).toBe("dark");
-    expect(
-      screen.getByRole("button", { name: "گفت‌وگوی جدید", }),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "گفت‌وگوی جدید" })).toBeVisible();
   });
 
   it("warns before exporting a chat and downloads the selected format", async () => {
@@ -246,9 +240,7 @@ describe("foundation workspace", () => {
     });
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByRole("button", { name: "New chat", }),
-    ).toHaveFocus();
+    expect(screen.getByRole("button", { name: "New chat" })).toHaveFocus();
     await user.keyboard("{Escape}");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveFocus();

@@ -11,7 +11,11 @@ from app.llm.gemini import GeminiAdapter
 from app.llm.openai import OpenAIAdapter
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
-_ADAPTERS: dict[str, Callable[..., ProviderAdapter]] = {"openai": OpenAIAdapter, "anthropic": AnthropicAdapter, "google": GeminiAdapter}
+_ADAPTERS: dict[str, Callable[..., ProviderAdapter]] = {
+    "openai": OpenAIAdapter,
+    "anthropic": AnthropicAdapter,
+    "google": GeminiAdapter,
+}
 
 
 def _adapter(provider: str, values: dict, timeout: float):

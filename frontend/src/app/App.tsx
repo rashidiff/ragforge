@@ -375,9 +375,12 @@ export function App() {
             typeof payload.url === "string"
           ) {
             const citation: Citation = {
-              chunk_id: payload.chunk_id, document_id: payload.document_id,
-              filename: payload.filename, page_start: payload.page_start,
-              page_end: payload.page_end, url: payload.url,
+              chunk_id: payload.chunk_id,
+              document_id: payload.document_id,
+              filename: payload.filename,
+              page_start: payload.page_start,
+              page_end: payload.page_end,
+              url: payload.url,
             };
             citations = [
               ...citations.filter(

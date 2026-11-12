@@ -129,7 +129,9 @@ class IndexManager:
                     "Embedding configuration changed. A full rebuild is required before search."
                 )
             return {
-                "index_version": self._snapshot.version if compatible and self._snapshot is not None else None,
+                "index_version": self._snapshot.version
+                if compatible and self._snapshot is not None
+                else None,
                 "ready": (not documents and not self._unavailable)
                 or (compatible and bool(self._active_ids(state, self._snapshot))),
                 "jobs": [jobs[job_id]]

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import builtins
+import json
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path

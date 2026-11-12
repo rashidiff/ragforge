@@ -42,7 +42,10 @@ def test_deletion_resumes_after_crash_between_tombstone_and_gc(tmp_path):
     store = make_store(tmp_path)
     chat = store.create()
     store.append_message(chat["chat_id"], "r", "user", "private")
-    with (patch.object(store, "_collect", side_effect=OSError("disk unavailable")), pytest.raises(OSError)):
+    with (
+        patch.object(store, "_collect", side_effect=OSError("disk unavailable")),
+        pytest.raises(OSError),
+    ):
         store.delete(chat["chat_id"])
     assert store.list() == []
     reopened = make_store(tmp_path)
@@ -53,7 +56,10 @@ def test_deletion_resumes_after_crash_between_tombstone_and_gc(tmp_path):
 def test_failed_atomic_publication_keeps_previous_state(tmp_path):
     state = JsonState(tmp_path / "snapshot.json", {"schema_version": 1, "value": 1})
     state.update(lambda data: data.update(value=2))
-    with (patch("app.services.state_store.os.replace", side_effect=OSError("disk")), pytest.raises(OSError)):
+    with (
+        patch("app.services.state_store.os.replace", side_effect=OSError("disk")),
+        pytest.raises(OSError),
+    ):
         state.update(lambda data: data.update(value=3))
     assert state.read()["value"] == 2
 
