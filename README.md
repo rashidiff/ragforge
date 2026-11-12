@@ -1,6 +1,6 @@
 # Ragforge
 
-<video src="docs/media/ragforge-demo.mp4" controls autoplay muted playsinline width="100%">Your browser does not support embedded video. <a href="docs/media/ragforge-demo.mp4">Open the demo video</a>.</video>
+![Ragforge demo](docs/media/ragforge-demo.gif)
 
 [![CI](https://github.com/rashidiff/ragforge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rashidiff/ragforge/actions/workflows/ci.yml)
 
