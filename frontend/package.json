@@ -1,0 +1,50 @@
+{
+  "name": "local-rag-chat-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e:ci": "playwright test --config=playwright.ci.config.ts",
+    "lint": "eslint src tests e2e playwright.config.ts playwright.ci.config.ts --max-warnings 0",
+    "test:e2e": "playwright test --config=playwright.config.ts",
+    "typecheck": "tsc -b --pretty false",
+    "format": "prettier --write src tests",
+    "format:check": "prettier --check src tests",
+    "contracts": "openapi-typescript ../backend/openapi.json -o src/lib/openapi.d.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.2",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@playwright/test": "^1.65.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
+    "openapi-typescript": "^7.4.4",
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^3.4.16",
+    "typescript-eslint": "^8.48.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

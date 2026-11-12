@@ -1,0 +1,45 @@
+# Local source documents, archives, indexes, snapshots, and credentials
+/data/
+.env
+.env.*
+!.env.example
+*.log
+*.log.jsonl
+*.bak
+*.partial-*
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Frontend/tool outputs
+node_modules/
+/frontend/dist/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+
+# Secrets and local credential stores
+/secrets/
+/.secrets/
+/credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db

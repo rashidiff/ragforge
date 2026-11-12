@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "local-rag-chat"
+version = "0.1.0"
+description = "Local PDF-grounded chat with explicit remote-provider boundaries"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "pydantic>=2.9,<3",
+  "pydantic-settings>=2.5,<3",
+  "uvicorn>=0.30,<1",
+  "python-multipart>=0.0.18,<1",
+  "filelock>=3.16,<4",
+]
+
+[project.optional-dependencies]
+rag = ["pymupdf>=1.24,<2", "sentence-transformers>=3,<6", "faiss-cpu>=1.8,<2", "rank-bm25>=0.2.2,<1"]
+providers = ["httpx>=0.27,<1", "keyring>=25,<27"]
+dev = ["pytest>=8,<10", "httpx>=0.27,<1", "ruff>=0.8,<1", "mypy>=1.13,<2"]
+ci = ["numpy>=1.26,<2", "pymupdf>=1.24,<2", "faiss-cpu>=1.8,<2", "rank-bm25>=0.2.2,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
