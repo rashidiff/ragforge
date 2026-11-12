@@ -134,24 +134,32 @@ def test_source_excerpt_endpoint_is_scoped_to_document_and_page(client, monkeypa
 
 
 def test_real_indexed_chunk_opens_source_without_exposing_internal_metadata(client):
-    response = client.post('/api/library/upload', files={
-        'file': ('contract.pdf', fixture_pdf(), 'application/pdf')})
+    response = client.post(
+        "/api/library/upload", files={"file": ("contract.pdf", fixture_pdf(), "application/pdf")}
+    )
     assert response.status_code == 202
-    document_id = response.json()['document']['document_id']
+    document_id = response.json()["document"]["document_id"]
     finish(client)
-    sources = client.app.state.runtime.index.search_library('ABC-104 delivery deadline')
+    sources = client.app.state.runtime.index.search_library("ABC-104 delivery deadline")
     assert sources
-    chunk_id = sources[0]['chunk_id']
+    chunk_id = sources[0]["chunk_id"]
     internal = client.app.state.runtime.index.get_source_excerpt(chunk_id)
-    assert 'sha256' in internal
-    response = client.get(f'/api/library/{document_id}/sources/{chunk_id}')
+    assert "sha256" in internal
+    response = client.get(f"/api/library/{document_id}/sources/{chunk_id}")
     assert response.status_code == 200
     source = response.json()
     assert set(source) == {
-        'chunk_id', 'document_id', 'filename', 'page_start', 'page_end',
-        'url', 'text', 'index_version', 'available',
+        "chunk_id",
+        "document_id",
+        "filename",
+        "page_start",
+        "page_end",
+        "url",
+        "text",
+        "index_version",
+        "available",
     }
-    assert source['available'] is True
-    assert 'ABC-104' in source['text']
-    assert source['url'] == f'/api/library/{document_id}/pdf#page=1'
-    assert client.get(f'/api/library/{document_id}/pdf').status_code == 200
+    assert source["available"] is True
+    assert "ABC-104" in source["text"]
+    assert source["url"] == f"/api/library/{document_id}/pdf#page=1"
+    assert client.get(f"/api/library/{document_id}/pdf").status_code == 200
