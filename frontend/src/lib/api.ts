@@ -8,6 +8,8 @@ import type {
   UploadAccepted,
   IndexJob,
   DeletionAccepted,
+  ModelCatalog,
+  ModelSelection,
   AppSettings,
   SettingsUpdate,
   ConnectionTestResult,
@@ -122,6 +124,10 @@ export const api = {
   rebuildIndex: () => request<IndexJob>("/index/rebuild", { method: "POST" }),
   settings: (signal?: AbortSignal) =>
     request<AppSettings>("/settings", { signal }),
+  modelCatalog: (signal?: AbortSignal) => request<ModelCatalog>("/settings/models", { signal }),
+  selectModel: (values: ModelSelection) => request<AppSettings>("/settings/model", {
+    method: "PUT", body: JSON.stringify(values),
+  }),
   updateSettings: (values: SettingsUpdate) =>
     request<AppSettings>("/settings", {
       method: "PUT",

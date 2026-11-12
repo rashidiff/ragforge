@@ -6,6 +6,8 @@ import { api } from "../src/lib/api";
 
 vi.mock("../src/lib/api", () => ({
   api: {
+    modelCatalog: vi.fn(),
+    selectModel: vi.fn(),
     chats: vi.fn(),
     health: vi.fn(),
     messages: vi.fn(),
@@ -31,6 +33,7 @@ const chat = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(api.modelCatalog).mockResolvedValue({ provider: "openai", current_model: "gpt-4.1", default_model: "gpt-4.1", models: [{id: "gpt-4.1", label: "GPT-4.1"}], source_url: null, reviewed_at: "2026-11-12" });
   window.localStorage.clear();
   document.documentElement.dir = "ltr";
   document.documentElement.lang = "en";
@@ -194,23 +197,31 @@ describe("foundation workspace", () => {
     );
   });
 
-  it("persists theme and language preferences and applies Persian RTL direction", async () => {
+  it("supports English and French preferences without a Persian interface option", async () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("button", { name: "New chat" });
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Interface language" }),
-      "fa",
-    );
-    await waitFor(() => expect(document.documentElement.dir).toBe("rtl"));
-    expect(document.documentElement.lang).toBe("fa");
-    expect(window.localStorage.getItem("local-rag-locale")).toBe("fa");
-    await user.click(screen.getByRole("button", { name: "پوسته تیره" }));
+    const language = screen.getByRole("combobox", { name: "Interface language" });
+    expect(within(language).queryByRole("option", { name: "فارسی" })).toBeNull();
+    await user.selectOptions(language, "fr");
+    await waitFor(() => expect(document.documentElement.lang).toBe("fr"));
+    expect(document.documentElement.dir).toBe("ltr");
+    expect(window.localStorage.getItem("local-rag-locale")).toBe("fr");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Langue de l’interface" }), "en");
+    await user.click(screen.getByRole("button", { name: "Use dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("local-rag-theme")).toBe("dark");
-    expect(screen.getByRole("button", { name: "گفت‌وگوی جدید" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "New chat" })).toBeVisible();
   });
 
+  it("migrates a stored Persian interface preference to English without changing Unicode chats", async () => {
+    window.localStorage.setItem("local-rag-locale", "fa");
+    render(<App />);
+    expect(await screen.findByRole("button", { name: "فارسی" })).toBeVisible();
+    expect(document.documentElement.lang).toBe("en");
+    expect(document.documentElement.dir).toBe("ltr");
+    expect(window.localStorage.getItem("local-rag-locale")).toBe("en");
+  });
   it("warns before exporting a chat and downloads the selected format", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("URL", {

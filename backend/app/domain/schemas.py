@@ -310,3 +310,30 @@ class CompactionStatus(Contract):
     usage: dict[str, int | None] | None = None
     error_category: str | None = None
     retryable: bool
+
+
+class ModelOption(Contract):
+    id: str
+    label: str
+
+
+class ModelCatalog(Contract):
+    provider: Literal["openai", "anthropic", "google", "openai_compatible"]
+    current_model: str
+    default_model: str
+    models: list[ModelOption]
+    source_url: str | None
+    reviewed_at: str
+
+
+class ModelSelection(Contract):
+    provider: Literal["openai", "anthropic", "google", "openai_compatible"]
+    model: str = Field(min_length=1, max_length=200)
+
+    @field_validator("model")
+    @classmethod
+    def model_identifier(cls, value: str) -> str:
+        value = value.strip()
+        if not value or any(character.isspace() for character in value):
+            raise ValueError("Enter a model identifier without whitespace")
+        return value

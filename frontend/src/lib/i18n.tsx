@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext } from "react";
 import type { ReactNode } from "react";
 
-export type Locale = "en" | "fr" | "fa";
+export type Locale = "en" | "fr";
 const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
   fr: Object.assign(
     {
@@ -15,6 +15,16 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
       "Connecting…": "Connexion…",
       "Use light theme": "Thème clair",
       "Use dark theme": "Thème sombre",
+      "LLM model": "Modèle LLM",
+      "Choose a model": "Choisir un modèle",
+      "Loading models…": "Chargement des modèles…",
+      "Other model…": "Autre modèle…",
+      "Custom model ID": "Identifiant du modèle",
+      "Use model": "Utiliser ce modèle",
+      "Reload models": "Recharger les modèles",
+      "Model documentation": "Documentation des modèles",
+      "Choose your model from the menu at the top of the chat.": "Choisissez votre modèle dans le menu en haut de la conversation.",
+      "Model access depends on your provider account.": "Accès aux modèles selon votre compte fournisseur.",
       "Interface language": "Langue de l’interface",
       "New chat": "Nouvelle conversation",
       "Creating…": "Création…",
@@ -205,196 +215,7 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
       delete: "suppression",
     },
   ),
-  fa: Object.assign(
-    {
-      "Chat navigation": "پیمایش گفت‌وگوها",
-      "Main navigation": "پیمایش اصلی",
-      "Skip to content": "رفتن به محتوا",
-      "Close navigation": "بستن پیمایش",
-      "Open navigation": "باز کردن پیمایش",
-      "Your workspace": "فضای کاری شما",
-      "Local workspace": "فضای کاری محلی",
-      "Connecting…": "در حال اتصال…",
-      "Use light theme": "پوسته روشن",
-      "Use dark theme": "پوسته تیره",
-      "Interface language": "زبان رابط",
-      "New chat": "گفت‌وگوی جدید",
-      "Creating…": "در حال ایجاد…",
-      Library: "کتابخانه",
-      Settings: "تنظیمات",
-      Conversations: "گفت‌وگوها",
-      "Loading chats…": "در حال بارگذاری گفت‌وگوها…",
-      "Your conversations will appear here.":
-        "گفت‌وگوهای شما اینجا نمایش داده می‌شوند.",
-      Save: "ذخیره",
-      Cancel: "لغو",
-      Rename: "تغییر نام",
-      Delete: "حذف",
-      "Chat title": "عنوان گفت‌وگو",
-    },
-    {
-      "Close error": "بستن خطا",
-      "Make room for a clearer answer.": "برای پاسخی روشن‌تر آماده شوید.",
-      "Create a conversation, collect your PDFs, and keep the original context close at hand.":
-        "گفت‌وگویی بسازید، PDFهای خود را گردآوری کنید و زمینه اصلی را در دسترس نگه دارید.",
-      "Conversation memory could not be updated":
-        "حافظه گفت‌وگو به‌روزرسانی نشد",
-      "Your saved messages remain available.":
-        "پیام‌های ذخیره‌شده شما همچنان در دسترس هستند.",
-      "Could not copy the answer. Select its text to copy it manually.":
-        "کپی پاسخ ممکن نبود. متن آن را برای کپی دستی انتخاب کنید.",
-      "Interrupted answer · incomplete": "پاسخ متوقف‌شده · ناتمام",
-      "Ask about your PDFs…": "درباره PDFهای خود بپرسید…",
-      Stop: "توقف",
-      Send: "ارسال",
-      "Compacting previous conversation messages":
-        "در حال فشرده‌سازی پیام‌های قبلی",
-      "Your documents, together.": "اسناد شما، در کنار هم.",
-      "PDFs are shared across chats once local indexing succeeds.":
-        "پس از نمایه‌سازی محلی، PDFها در همه گفت‌وگوها در دسترس هستند.",
-      "Rebuild index": "بازسازی نمایه",
-      "Upload PDF": "بارگذاری PDF",
-      "Uploading and validating PDF…": "در حال بارگذاری و بررسی PDF…",
-      "Drop a PDF here, or choose Upload PDF.":
-        "PDF را اینجا رها کنید یا بارگذاری PDF را انتخاب کنید.",
-      "Original files and all indexing stay on this computer.":
-        "فایل‌های اصلی و نمایه‌سازی روی این رایانه می‌مانند.",
-      "Loading Library…": "در حال بارگذاری کتابخانه…",
-      "Library documents": "اسناد کتابخانه",
-      Preview: "پیش‌نمایش",
-      Reindex: "نمایه‌سازی دوباره",
-      Remove: "حذف",
-      Page: "صفحه",
-      "Open PDF": "باز کردن PDF",
-      "Close PDF preview": "بستن پیش‌نمایش PDF",
-      "Settings & privacy": "تنظیمات و حریم خصوصی",
-      "The connection test checks the OpenAI Responses protocol at this URL. Tool and usage capabilities are explicit endpoint settings; unsupported behavior remains an error or is reported unavailable.":
-        "آزمایش اتصال، پروتکل OpenAI Responses را در این نشانی بررسی می‌کند. پشتیبانی ابزار و مصرف به‌صورت تنظیم صریح تعیین می‌شود؛ قابلیت‌های پشتیبانی‌نشده گزارش می‌شوند.",
-      "Keys stay in session memory by default. The browser field clears after saving. A missing OS vault produces an error and never falls back to a file.":
-        "کلیدها به‌طور پیش‌فرض در حافظه نشست می‌مانند. پس از ذخیره، فیلد مرورگر پاک می‌شود. نبود صندوق امن سیستم خطا می‌دهد و کلید در فایل ذخیره نمی‌شود.",
-      "Key status": "وضعیت کلید",
-      configured: "تنظیم‌شده",
-      "not configured for this provider": "برای این ارائه‌دهنده تنظیم نشده",
-      "The key is never returned by the API.":
-        "کلید هرگز از API بازگردانده نمی‌شود.",
-      "Local document processing": "پردازش محلی اسناد",
-      "Embedding model": "مدل بردارسازی",
-      "Embedding revision": "نسخه مدل",
-      "Changing the embedding model requires a full local Library rebuild. Initial model and package downloads may need internet access.":
-        "تغییر مدل بردارسازی به بازسازی کامل کتابخانه محلی نیاز دارد. دریافت اولیه مدل و بسته‌ها ممکن است به اینترنت نیاز داشته باشد.",
-      "OCR runs locally with Tesseract. Missing Tesseract or language packs produces a warning, and scans that remain unreadable are not marked searchable.":
-        "OCR با Tesseract به‌صورت محلی اجرا می‌شود. نبود Tesseract یا بسته‌های زبان هشدار می‌دهد و صفحه‌های ناخوانا قابل جست‌وجو نمی‌شوند.",
-      "OCR languages": "زبان‌های OCR",
-      "Model context tokens": "توکن‌های زمینه مدل",
-      "Maximum output tokens": "حداکثر توکن خروجی",
-      "Local data and remote generation": "داده محلی و تولید پاسخ دوردست",
-      "Loading settings…": "در حال بارگذاری تنظیمات…",
-      "A key is configured": "یک کلید تنظیم شده است",
-      "Enter a provider key": "کلید ارائه‌دهنده را وارد کنید",
-      "Saving…": "در حال ذخیره…",
-      "Testing…": "در حال آزمایش…",
-      "PDFs and indexes stay on this computer. A selected remote provider receives only retrieved PDF snippets, your question, instructions and needed conversation context.":
-        "PDFها و نمایه‌ها روی این رایانه می‌مانند. ارائه‌دهنده دوردست فقط بخش‌های بازیابی‌شده، پرسش، دستورالعمل‌ها و زمینه لازم را دریافت می‌کند.",
-      "Save key in the OS credential vault":
-        "ذخیره کلید در صندوق امن سیستم‌عامل",
-      "from the Library? Historical chats will be preserved.":
-        "از کتابخانه؟ گفت‌وگوهای تاریخی حفظ می‌شوند.",
-      "PDF Library": "کتابخانه PDF",
-      Queued: "در صف",
-      "Loading local embedding model": "بارگذاری مدل محلی",
-      "Extracting pages": "استخراج صفحه‌ها",
-      "Checking or running local OCR": "بررسی یا اجرای OCR محلی",
-      "Chunking text": "بخش‌بندی متن",
-      "Embedding locally": "بردارسازی محلی",
-      "Publishing index": "انتشار نمایه",
-      Ready: "آماده",
-      Failed: "ناموفق",
-      "Removing PDF": "حذف PDF",
-      "Delete this chat?": "این گفت‌وگو حذف شود؟",
-      "Delete chat": "حذف گفت‌وگو",
-      "Deleting…": "در حال حذف…",
-      "Local storage · No account": "ذخیره‌سازی محلی · بدون حساب",
-      Conversation: "گفت‌وگو",
-      "Loading conversation…": "در حال بارگذاری گفت‌وگو…",
-      You: "شما",
-      Assistant: "دستیار",
-      "Copy answer": "کپی پاسخ",
-      Copied: "کپی شد",
-      "Retry last response": "تلاش دوباره برای پاسخ",
-      "Retry memory update": "تلاش دوباره برای به‌روزرسانی حافظه",
-      Message: "پیام",
-      "A workspace for your PDFs": "فضایی برای PDFهای شما",
-      "Start with your documents.": "با اسناد خود شروع کنید.",
-      "Open Library": "باز کردن کتابخانه",
-      "Choose PDF file": "انتخاب فایل PDF",
-      "Language model": "مدل زبانی",
-      Provider: "ارائه‌دهنده",
-      "Model name": "نام مدل",
-      "API key": "کلید API",
-      "Save settings": "ذخیره تنظیمات",
-      "Test connection": "آزمایش اتصال",
-      "Remove key": "حذف کلید",
-      "Enable optional local OCR": "فعال‌سازی OCR محلی اختیاری",
-      "Your workspace stays local.": "فضای کاری شما محلی می‌ماند.",
-      "Ask questions grounded in your active PDF Library.":
-        "پرسش‌های خود را بر پایه PDFهای فعال بپرسید.",
-      "Your documents, in focus": "اسناد شما، در کانون توجه",
-      "Preparing request…": "آماده‌سازی درخواست…",
-      "Settings could not be loaded.": "بارگذاری تنظیمات ممکن نبود.",
-      "Settings could not be saved.": "ذخیره تنظیمات ممکن نبود.",
-      "Settings saved. The API key was cleared from this form.":
-        "تنظیمات ذخیره شد. کلید API از این فرم پاک شد.",
-      "The provider key was removed.": "کلید ارائه‌دهنده حذف شد.",
-      "The key could not be removed.": "حذف کلید ممکن نبود.",
-      "The connection test failed.": "آزمایش اتصال ناموفق بود.",
-      "Dismiss Library error": "بستن خطای کتابخانه",
-      "Upload one PDF at a time so each indexing job can finish.":
-        "برای تکمیل هر کار نمایه‌سازی، هر بار یک PDF بارگذاری کنید.",
-      "Only PDF files are accepted.": "فقط فایل‌های PDF پذیرفته می‌شوند.",
-      "Upload failed.": "بارگذاری ناموفق بود.",
-      "Library could not be loaded.": "بارگذاری کتابخانه ممکن نبود.",
-      "Library update failed.": "به‌روزرسانی کتابخانه ناموفق بود.",
-      pages: "صفحه",
-      "PDF source": "منبع PDF",
-      "Close source": "بستن منبع",
-      "Loading source…": "در حال بارگذاری منبع…",
-      "This source is unavailable.": "این منبع در دسترس نیست.",
-      "Open PDF at page": "باز کردن PDF در صفحه",
-      "The request could not finish. Please retry.":
-        "درخواست کامل نشد. لطفاً دوباره تلاش کنید.",
-      "and its conversation memory will be removed. Local backups may still contain it. Other chats and your PDF Library are preserved.":
-        "و حافظه گفت‌وگوی آن حذف می‌شود. نسخه‌های پشتیبان محلی ممکن است هنوز آن را داشته باشند. سایر گفت‌وگوها و کتابخانه PDF حفظ می‌شوند.",
-      "Endpoint supports the configured Library tools":
-        "نقطه پایانی از ابزارهای کتابخانه پشتیبانی می‌کند",
-      "Endpoint reports token usage": "نقطه پایانی مصرف توکن را گزارش می‌کند",
-      "Responses API base URL": "نشانی پایه API پاسخ‌ها",
-      "There is no account, analytics, or telemetry. Provider calls and initial model/package downloads require internet access.":
-        "حساب، تحلیل یا دورسنجی وجود ندارد. تماس با ارائه‌دهنده و دریافت اولیه مدل و بسته‌ها به اینترنت نیاز دارد.",
-      "Conversation history, activity logs, PDFs, indexes and memory are stored locally. Local history can contain sensitive text; files are not encrypted by the application.":
-        "تاریخچه، گزارش‌ها، PDFها، نمایه‌ها و حافظه محلی ذخیره می‌شوند. تاریخچه ممکن است متن حساس داشته باشد؛ برنامه فایل‌ها را رمزگذاری نمی‌کند.",
-      "Export as Markdown": "خروجی Markdown",
-      "Export as JSON": "خروجی JSON",
-      "Export warning":
-        "این خروجی شامل تاریخچه کامل گفت‌وگو است و ممکن است متن حساس داشته باشد. ادامه می‌دهید؟",
-      "Backup warning":
-        "این پشتیبان شامل تاریخچه کامل است و ممکن است متن حساس داشته باشد. ادامه می‌دهید؟",
-      "Download raw history backup": "دریافت پشتیبان خام تاریخچه",
-      "This message looks like it may contain an API key or secret. It will be saved verbatim in local history and may be sent to the selected provider. Remove it before sending if unintended.":
-        "به نظر می‌رسد این پیام حاوی کلید API یا راز باشد. متن آن عیناً در تاریخچه محلی ذخیره می‌شود و ممکن است برای ارائه‌دهنده منتخب ارسال شود. اگر عمدی نیست، پیش از ارسال آن را حذف کنید.",
-      "Connected to": "اتصال برقرار شد به",
-      using: "با",
-      "using OpenAI Responses.": "با OpenAI Responses.",
-      "Library tools": "ابزارهای کتابخانه",
-      "token usage": "مصرف توکن",
-      available: "در دسترس",
-      unavailable: "در دسترس نیست",
-      reported: "گزارش‌شده",
-      upload: "بارگذاری",
-      reindex: "نمایه‌سازی دوباره",
-      rebuild: "بازسازی",
-      delete: "حذف",
-    },
-  ),
+
 };
 
 interface LocaleContextValue {

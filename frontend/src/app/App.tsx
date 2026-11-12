@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, Moon, Sun, X } from "lucide-react";
+import { ModelSelector } from "../components/ModelSelector";
 import { Sidebar } from "../components/Sidebar";
 import type { Page } from "../components/Sidebar";
 import { DeleteChatDialog } from "../components/DeleteChatDialog";
@@ -47,11 +48,12 @@ export function App() {
   const [locale, setLocale] = useState<Locale>(() => {
     try {
       const stored = window.localStorage.getItem("local-rag-locale");
-      return stored === "fr" || stored === "fa" ? stored : "en";
+      return stored === "fr" ? stored : "en";
     } catch {
       return "en";
     }
   });
+  const [modelPending, setModelPending] = useState(false);
   const [health, setHealth] = useState<Health | null>(null);
   const [streamChatId, setStreamChatId] = useState<string | null>(null);
   const [streamStatus, setStreamStatus] = useState("");
@@ -120,7 +122,7 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    document.documentElement.dir = locale === "fa" ? "rtl" : "ltr";
+    document.documentElement.dir = "ltr";
     try {
       window.localStorage.setItem("local-rag-locale", locale);
     } catch {
@@ -296,7 +298,7 @@ export function App() {
   }
 
   async function startMessage(content: string, retryOfRequestId?: string) {
-    if (streamController.current || (!retryOfRequestId && !content.trim()))
+    if (modelPending || streamController.current || (!retryOfRequestId && !content.trim()))
       return;
     setStreamError("");
     setStreamErrorChatId(null);
@@ -499,6 +501,7 @@ export function App() {
                     page === "library" ? "Library" : "Settings",
                   )}
             </div>
+            {page === "chat" && <ModelSelector disabled={streamChatId !== null} onPendingChange={setModelPending} />}
             <span className="connection-state">
               {health?.storage_ready
                 ? translate(locale, "Local workspace")
@@ -515,7 +518,6 @@ export function App() {
               >
                 <option value="en">English</option>
                 <option value="fr">Français</option>
-                <option value="fa">فارسی</option>
               </select>
             </label>
             <button
@@ -547,6 +549,7 @@ export function App() {
               chat={current}
               messages={visibleMessages}
               loading={loadingMessages}
+              modelPending={modelPending}
               onLibrary={() => navigate("library")}
               onSend={(content) => startMessage(content)}
               onStop={stopMessage}

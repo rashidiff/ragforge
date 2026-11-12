@@ -4,11 +4,12 @@ from collections.abc import Callable
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.domain.schemas import AppSettings, ConnectionTestResult, SettingsUpdate
+from app.domain.schemas import AppSettings, ConnectionTestResult, SettingsUpdate, ModelCatalog, ModelSelection
 from app.llm.anthropic import AnthropicAdapter
 from app.llm.base import Capabilities, ProviderAdapter, ProviderError
 from app.llm.gemini import GeminiAdapter
 from app.llm.openai import OpenAIAdapter
+from app.services.model_catalog import default_model, model_catalog
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 _ADAPTERS: dict[str, Callable[..., ProviderAdapter]] = {
@@ -45,6 +46,11 @@ def read_settings(request: Request):
 @router.put("", response_model=AppSettings)
 def update_settings(body: SettingsUpdate, request: Request):
     runtime = request.app.state.runtime
+    with runtime.generations.configuration_change():
+        return _update_settings(body, runtime)
+
+
+def _update_settings(body: SettingsUpdate, runtime):
     values = runtime.app_settings.read()
     provided = body.model_fields_set
     changes = {
@@ -53,6 +59,9 @@ def update_settings(body: SettingsUpdate, request: Request):
         if key not in {"api_key", "persist_key", "remove_key"}
         and (getattr(body, key) is not None or key == "embedding_revision")
     }
+    provider = changes.get("provider", values["provider"])
+    if "model" not in changes and (provider != values["provider"] or not values["model"]):
+        changes["model"] = default_model(provider)
     combined = {**values, **changes}
     if combined["provider"] == "openai_compatible" and not combined.get("compatible_base_url"):
         raise HTTPException(422, "Configure an OpenAI-compatible endpoint before selecting it")
@@ -85,13 +94,29 @@ def update_settings(body: SettingsUpdate, request: Request):
     return public_settings(runtime)
 
 
+@router.get("/models", response_model=ModelCatalog)
+def list_models(request: Request):
+    values = request.app.state.runtime.app_settings.read()
+    return model_catalog(values["provider"], values["model"])
+
+
+@router.put("/model", response_model=AppSettings)
+def select_model(body: ModelSelection, request: Request):
+    runtime = request.app.state.runtime
+    with runtime.generations.configuration_change():
+        if runtime.app_settings.read()["provider"] != body.provider:
+            raise HTTPException(409, "Provider changed. Reload the model menu and try again.")
+        return _update_settings(SettingsUpdate(model=body.model), runtime)
+
+
 @router.post("/test-connection", response_model=ConnectionTestResult)
 async def test_connection(request: Request):
     runtime = request.app.state.runtime
     values = runtime.app_settings.read()
-    provider, model = values["provider"], values["model"]
+    provider = values["provider"]
+    model = values["model"] or default_model(provider)
     if not model.strip():
-        raise HTTPException(422, "Enter a model name before testing the connection")
+        raise HTTPException(422, "Choose a model from the chat menu before testing the connection")
     key = runtime.credentials.get(provider)
     if not key:
         raise ProviderError("missing_key", "Add a provider API key before testing the connection")

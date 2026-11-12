@@ -41,7 +41,8 @@ it("loads settings, clears entered key after save, and never persists without op
   });
   const user = userEvent.setup();
   render(<SettingsPage />);
-  await screen.findByDisplayValue("model-one");
+  await screen.findByLabelText("Provider");
+  expect(screen.queryByLabelText("Model name")).not.toBeInTheDocument();
   await user.type(screen.getByLabelText("API key"), "session-key");
   await user.click(screen.getByRole("button", { name: "Save settings" }));
   await waitFor(() =>

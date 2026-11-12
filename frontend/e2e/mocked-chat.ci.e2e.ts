@@ -7,6 +7,7 @@ const requestId = "3fd02b08-6396-4a97-b146-2128cdfa8a96";
 const now = "2026-11-12T12:00:00+00:00";
 
 test("chat UI renders a mocked streamed answer and reloads saved history", async ({ page }) => {
+  let selectedModel = "gpt-4.1";
   const requestBodies: unknown[] = [];
   let savedMessages: Array<Record<string, unknown>> = [];
 
@@ -14,6 +15,17 @@ test("chat UI renders a mocked streamed answer and reloads saved history", async
     const request = route.request();
     const { pathname } = new URL(request.url());
 
+    if (pathname === "/api/settings/models") {
+      await route.fulfill({json: {provider: "openai", current_model: selectedModel,
+        default_model: "gpt-4.1", reviewed_at: "2026-11-12", source_url: null,
+        models: [{id: "gpt-4.1", label: "GPT-4.1"}, {id: "gpt-4.1-mini", label: "GPT-4.1 mini"}]}});
+      return;
+    }
+    if (pathname === "/api/settings/model" && request.method() === "PUT") {
+      selectedModel = request.postDataJSON().model;
+      await route.fulfill({json: {provider: "openai", model: selectedModel}});
+      return;
+    }
     if (pathname === "/api/health") {
       await route.fulfill({ json: {
         status: "ok", version: "ci", storage_ready: true, index_ready: true, warnings: [],
@@ -65,6 +77,10 @@ test("chat UI renders a mocked streamed answer and reloads saved history", async
   });
 
   await page.goto("/");
+  const modelMenu = page.getByRole("combobox", {name: "LLM model"});
+  await expect(modelMenu).toHaveValue("gpt-4.1");
+  await modelMenu.selectOption("gpt-4.1-mini");
+  await expect(modelMenu).toHaveValue("gpt-4.1-mini");
   const composer = page.getByRole("textbox", { name: "Message" });
   await expect(composer).toBeVisible();
   await composer.fill("What is the CI answer?");

@@ -21,6 +21,7 @@ interface Props {
   onStop?: () => void;
   onRetry?: (requestId: string) => void;
   streaming?: boolean;
+  modelPending?: boolean;
   stage?: string;
   streamError?: string;
   liveAssistantId?: string;
@@ -38,6 +39,7 @@ export function ChatPage({
   onStop,
   onRetry,
   streaming = false,
+  modelPending = false,
   stage = "",
   streamError = "",
   liveAssistantId,
@@ -65,7 +67,7 @@ export function ChatPage({
         message.request_id === retryUser.request_id &&
         message.completed,
     );
-  const canRetry = !streaming && Boolean(retryUser) && !hasCompletedAnswer;
+  const canRetry = !streaming && !modelPending && Boolean(retryUser) && !hasCompletedAnswer;
 
   useEffect(() => {
     const element = composerRef.current;
@@ -96,7 +98,7 @@ export function ChatPage({
   }, [messages]);
 
   function send() {
-    if (!draft.trim() || streaming) return;
+    if (!draft.trim() || streaming || modelPending) return;
     onSend?.(draft);
     setDraft("");
   }
@@ -264,7 +266,7 @@ export function ChatPage({
               }
             }}
             placeholder={t("Ask about your PDFs…")}
-            disabled={streaming}
+            disabled={streaming || modelPending}
           />
           {streaming ? (
             <button type="button" className="stop-button" onClick={onStop}>
@@ -274,7 +276,7 @@ export function ChatPage({
             <button
               type="submit"
               className="send-button"
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || modelPending}
             >
               {t("Send")}
             </button>

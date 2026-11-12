@@ -27,7 +27,7 @@ context may leave your machine. See [Privacy and storage](#privacy-and-storage).
 - **Recursive conversation memory** — per-chat summaries compact completed messages
   in batches of eight while preserving the original archive. Smaller emergency
   batches can recover context budget when needed.
-- **A multilingual interface** — English, French, Persian with RTL support,
+- **A multilingual interface** — English and French, with Unicode document/message support,
   light/dark themes, keyboard controls, and responsive navigation.
 - **Portable history** — Markdown and JSON chat exports plus raw-history backups.
 
@@ -106,8 +106,9 @@ Stop either process with **Ctrl+C**.
 
 ### 4. Ask your first question
 
-1. Open **Settings**, select a provider, enter its model identifier and API key,
-   and test the connection. Use a model supported by your provider account.
+1. Open **Settings**, select a provider, enter its API key, and save. Choose the
+   model from the **LLM model** dropdown at the top of the chat. You can test the
+   connection in Settings using that selection (or the provider default).
 2. Open **Library** and upload a text-based PDF. Wait for indexing to finish.
 3. Start a chat and ask a question about the document.
 4. Open an answer's citation to inspect the supporting page and excerpt.
@@ -115,6 +116,9 @@ Stop either process with **Ctrl+C**.
 If the library is empty or no relevant evidence is retrieved, the application
 returns an evidence-limited response. Retrieval quality and generated answers
 should still be reviewed against the cited sources.
+
+See [model selection and provider catalogs](docs/model-selection.md) for the reviewed
+model list, account-access caveats, custom endpoints, and selection behavior.
 
 ## Configuration
 

@@ -48,7 +48,6 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
     try {
       const updated = await api.updateSettings({
         provider: settings.provider,
-        model: settings.model,
         compatible_base_url: settings.compatible_base_url,
         compatible_tools: settings.compatible_tools,
         compatible_usage: settings.compatible_usage,
@@ -239,15 +238,7 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
                 </p>
               </>
             )}
-            <label>
-              {t("Model name")}
-              <input
-                required
-                maxLength={200}
-                value={settings.model}
-                onChange={(event) => change("model", event.target.value)}
-              />
-            </label>
+            <p className="field-note">{t("Choose your model from the menu at the top of the chat.")}</p>
             <label>
               {t("API key")}
               <input
@@ -285,8 +276,7 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
                 disabled={
                   testing ||
                   busy ||
-                  !selectedProviderHasKey ||
-                  !settings.model.trim()
+                  !selectedProviderHasKey
                 }
               >
                 {t(testing ? "Testing…" : "Test connection")}

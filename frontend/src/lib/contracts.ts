@@ -238,3 +238,22 @@ export interface CompactionStatus {
   error_category?: string | null;
   retryable: boolean;
 }
+
+export interface ModelOption {
+  id: string;
+  label: string;
+}
+
+export interface ModelCatalog {
+  provider: "openai" | "anthropic" | "google" | "openai_compatible";
+  current_model: string;
+  default_model: string;
+  models: Array<ModelOption>;
+  source_url: string | null;
+  reviewed_at: string;
+}
+
+export interface ModelSelection {
+  provider: "openai" | "anthropic" | "google" | "openai_compatible";
+  model: string;
+}
