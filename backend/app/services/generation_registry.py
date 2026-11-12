@@ -1,7 +1,7 @@
 """Bounded in-flight generation leases, isolated by chat."""
 
-from dataclasses import dataclass
 from contextlib import contextmanager
+from dataclasses import dataclass
 from threading import RLock
 from uuid import uuid4
 
@@ -48,7 +48,9 @@ class GenerationRegistry:
         """Keep provider/model changes atomic with generation lease acquisition."""
         with self._lock:
             if self._active:
-                raise GenerationConflictError("Wait for the current response before changing model settings")
+                raise GenerationConflictError(
+                    "Wait for the current response before changing model settings"
+                )
             yield
 
     def cancel(self, chat_id: str) -> bool:

@@ -4,7 +4,13 @@ from collections.abc import Callable
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.domain.schemas import AppSettings, ConnectionTestResult, SettingsUpdate, ModelCatalog, ModelSelection
+from app.domain.schemas import (
+    AppSettings,
+    ConnectionTestResult,
+    ModelCatalog,
+    ModelSelection,
+    SettingsUpdate,
+)
 from app.llm.anthropic import AnthropicAdapter
 from app.llm.base import Capabilities, ProviderAdapter, ProviderError
 from app.llm.gemini import GeminiAdapter

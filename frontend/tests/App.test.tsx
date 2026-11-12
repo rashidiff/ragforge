@@ -33,7 +33,14 @@ const chat = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(api.modelCatalog).mockResolvedValue({ provider: "openai", current_model: "gpt-4.1", default_model: "gpt-4.1", models: [{id: "gpt-4.1", label: "GPT-4.1"}], source_url: null, reviewed_at: "2026-11-12" });
+  vi.mocked(api.modelCatalog).mockResolvedValue({
+    provider: "openai",
+    current_model: "gpt-4.1",
+    default_model: "gpt-4.1",
+    models: [{ id: "gpt-4.1", label: "GPT-4.1" }],
+    source_url: null,
+    reviewed_at: "2026-11-12",
+  });
   window.localStorage.clear();
   document.documentElement.dir = "ltr";
   document.documentElement.lang = "en";
@@ -201,13 +208,20 @@ describe("foundation workspace", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("button", { name: "New chat" });
-    const language = screen.getByRole("combobox", { name: "Interface language" });
-    expect(within(language).queryByRole("option", { name: "فارسی" })).toBeNull();
+    const language = screen.getByRole("combobox", {
+      name: "Interface language",
+    });
+    expect(
+      within(language).queryByRole("option", { name: "فارسی" }),
+    ).toBeNull();
     await user.selectOptions(language, "fr");
     await waitFor(() => expect(document.documentElement.lang).toBe("fr"));
     expect(document.documentElement.dir).toBe("ltr");
     expect(window.localStorage.getItem("local-rag-locale")).toBe("fr");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Langue de l’interface" }), "en");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Langue de l’interface" }),
+      "en",
+    );
     await user.click(screen.getByRole("button", { name: "Use dark theme" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("local-rag-theme")).toBe("dark");

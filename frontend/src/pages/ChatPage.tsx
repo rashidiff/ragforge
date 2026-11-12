@@ -67,7 +67,8 @@ export function ChatPage({
         message.request_id === retryUser.request_id &&
         message.completed,
     );
-  const canRetry = !streaming && !modelPending && Boolean(retryUser) && !hasCompletedAnswer;
+  const canRetry =
+    !streaming && !modelPending && Boolean(retryUser) && !hasCompletedAnswer;
 
   useEffect(() => {
     const element = composerRef.current;

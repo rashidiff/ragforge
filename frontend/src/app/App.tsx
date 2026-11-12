@@ -298,7 +298,11 @@ export function App() {
   }
 
   async function startMessage(content: string, retryOfRequestId?: string) {
-    if (modelPending || streamController.current || (!retryOfRequestId && !content.trim()))
+    if (
+      modelPending ||
+      streamController.current ||
+      (!retryOfRequestId && !content.trim())
+    )
       return;
     setStreamError("");
     setStreamErrorChatId(null);
@@ -501,7 +505,12 @@ export function App() {
                     page === "library" ? "Library" : "Settings",
                   )}
             </div>
-            {page === "chat" && <ModelSelector disabled={streamChatId !== null} onPendingChange={setModelPending} />}
+            {page === "chat" && (
+              <ModelSelector
+                disabled={streamChatId !== null}
+                onPendingChange={setModelPending}
+              />
+            )}
             <span className="connection-state">
               {health?.storage_ready
                 ? translate(locale, "Local workspace")

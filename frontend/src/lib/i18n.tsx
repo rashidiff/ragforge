@@ -23,8 +23,10 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
       "Use model": "Utiliser ce modèle",
       "Reload models": "Recharger les modèles",
       "Model documentation": "Documentation des modèles",
-      "Choose your model from the menu at the top of the chat.": "Choisissez votre modèle dans le menu en haut de la conversation.",
-      "Model access depends on your provider account.": "Accès aux modèles selon votre compte fournisseur.",
+      "Choose your model from the menu at the top of the chat.":
+        "Choisissez votre modèle dans le menu en haut de la conversation.",
+      "Model access depends on your provider account.":
+        "Accès aux modèles selon votre compte fournisseur.",
       "Interface language": "Langue de l’interface",
       "New chat": "Nouvelle conversation",
       "Creating…": "Création…",
@@ -215,7 +217,6 @@ const messages: Record<Exclude<Locale, "en">, Record<string, string>> = {
       delete: "suppression",
     },
   ),
-
 };
 
 interface LocaleContextValue {

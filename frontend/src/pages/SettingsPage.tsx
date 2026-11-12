@@ -238,7 +238,9 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
                 </p>
               </>
             )}
-            <p className="field-note">{t("Choose your model from the menu at the top of the chat.")}</p>
+            <p className="field-note">
+              {t("Choose your model from the menu at the top of the chat.")}
+            </p>
             <label>
               {t("API key")}
               <input
@@ -273,11 +275,7 @@ export function SettingsPage({ onBackup }: { onBackup?: () => void }) {
               <button
                 type="button"
                 onClick={testConnection}
-                disabled={
-                  testing ||
-                  busy ||
-                  !selectedProviderHasKey
-                }
+                disabled={testing || busy || !selectedProviderHasKey}
               >
                 {t(testing ? "Testing…" : "Test connection")}
               </button>

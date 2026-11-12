@@ -46,9 +46,13 @@ def default_model(provider: str) -> str:
     return entry[1][0][0] if entry else ""
 
 
-def model_catalog(provider: Literal["openai", "anthropic", "google", "openai_compatible"], current_model: str) -> ModelCatalog:
+def model_catalog(
+    provider: Literal["openai", "anthropic", "google", "openai_compatible"], current_model: str
+) -> ModelCatalog:
     entry = CATALOG.get(provider)
-    models = [ModelOption(id=identifier, label=label) for identifier, label in entry[1]] if entry else []
+    models = (
+        [ModelOption(id=identifier, label=label) for identifier, label in entry[1]] if entry else []
+    )
     if current_model and not any(model.id == current_model for model in models):
         models.append(ModelOption(id=current_model, label=f"{current_model} (saved)"))
     return ModelCatalog(
