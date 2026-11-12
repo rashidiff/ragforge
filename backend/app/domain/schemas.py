@@ -184,7 +184,7 @@ class SettingsUpdate(Contract):
     persist_key: bool = False
     remove_key: bool = False
 
-    @field_validator("embedding_model")
+    @field_validator("model", "embedding_model")
     @classmethod
     def nonblank_text(cls, value: str | None) -> str | None:
         if value is None:
