@@ -59,52 +59,36 @@ cd ragforge
 
 ### 2. Install dependencies
 
-The `rag` extra installs local PDF/indexing dependencies. The `providers` extra
-installs HTTP integration and optional OS credential-vault support.
-
-**Windows — PowerShell**
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".\backend[rag,providers]"
-cd frontend
-npm install
-cd ..
-```
-
-**macOS, Linux, or WSL2**
+From the repository root, run these **two commands** on Windows, macOS,
+Linux, or WSL2:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -e './backend[rag,providers]'
-cd frontend
-npm install
-cd ..
+python ragforge.py install
+python ragforge.py start
 ```
 
-For WSL2, keep the checkout, Python environment, and Node installation inside the
-same WSL distribution. The first PDF indexing job downloads the configured local
-embedding model; allow time and disk space for that initial setup.
+If your system names Python `python3`, use `python3` in both commands.
+No virtual-environment activation, separate terminals, or global Python package
+installation is needed.
+
+The first command creates `.venv`, installs the backend with the `rag` and
+`providers` extras (including local PDF processing, embeddings, search, and provider
+support), and runs `npm install` in `frontend`. Run it once and again after pulling
+dependency changes. Python 3.11+ and Node.js 22+ with npm must already be installed.
+An interrupted installation can be retried with the same command.
 
 ### 3. Start the workspace
 
-Start the backend from the repository root and keep its terminal open:
-
-| Platform | Backend command |
-| --- | --- |
-| Windows PowerShell | `.\scripts\start.ps1` |
-| macOS, Linux, WSL2 | `sh scripts/start.sh` |
-
-In a second terminal, start the frontend:
-
-```sh
-cd frontend
-npm run dev
-```
-
-Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)**.
+`python ragforge.py start` launches **both the backend and frontend** in the same
+terminal and prints their URLs and logs. Open
+**[http://127.0.0.1:5173](http://127.0.0.1:5173)** after Vite reports it is ready.
 The frontend proxies API requests to the backend at `127.0.0.1:8000`.
-Stop either process with **Ctrl+C**.
+Press **Ctrl+C** to stop both servers. If either server exits, the launcher stops
+the other and reports the failure. Occupied ports are reported before startup.
+
+For WSL2, keep Python, Node, the checkout, and `.venv` inside the same WSL
+distribution. The first PDF indexing job downloads the configured embedding model;
+allow time and disk space. Optional Tesseract OCR must be installed separately.
 
 ### 4. Ask your first question
 
@@ -142,9 +126,11 @@ embedding model requires rebuilding the index. OCR also requires a local Tessera
 installation and the configured language packs; it is not enabled by installing
 Python dependencies alone.
 
-For a different backend port, set `RAG_PORT` and set `RAG_API_PROXY` in the frontend
-terminal to the matching local origin. `RAG_DEV_ORIGIN` must match the frontend's
-actual origin. The backend binds to `127.0.0.1`.
+For a different backend port, set `RAG_PORT` in `.env` or the environment.
+The launcher automatically sets the matching frontend proxy. To change the
+frontend port, set `RAG_DEV_ORIGIN`, for example `http://127.0.0.1:5174`.
+Both servers bind to `127.0.0.1`. Existing `scripts/start.ps1` and
+`scripts/start.sh` remain available for backend-only development.
 
 The answer and compaction instructions live in editable UTF-8 Markdown files:
 [`prompts/system.md`](prompts/system.md) and
