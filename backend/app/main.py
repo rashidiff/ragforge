@@ -64,7 +64,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             500: {"model": ErrorResponse},
         },
     )
-    origins = {f"http://127.0.0.1:{config.port}", config.dev_origin}
+    origins = {
+        f"http://127.0.0.1:{config.port}",
+        f"http://localhost:{config.port}",
+        config.dev_origin,
+    }
     application.add_middleware(
         CORSMiddleware,
         allow_origins=sorted(origins),
