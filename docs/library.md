@@ -77,18 +77,25 @@ generation.json  # encoder identity and component checksums
 The Library manifest stores its active generation pointer and the hash of the
 generation metadata. A rebuild writes, validates and flushes an entirely new
 generation, then atomically publishes pointer and document readiness together in
-one manifest snapshot. Readers use a complete pinned in-memory generation. Prior
-generations remain available for recovery; automatic generation GC is not enabled.
+one manifest snapshot. The backend retains only the active generation on disk, plus
+any older generation pinned by an in-flight search. A build temporarily needs space
+for a new generation alongside those retained snapshots. Cleanup runs after each job,
+when a pinned search finishes, and at startup. Failed and abandoned UUID generation
+directories are removed; unrecognized entries and symlinks are left untouched. Cleanup
+is best effort and is retried at the next opportunity if filesystem access fails.
+The backend lock permits only one process to use a data directory.
 
 Removal marks a document unavailable for future searches before rebuilding without
 it. Its original is removed after publication. If rebuilding fails, the prior
 generation remains usable with the removed document filtered out. A later rebuild
-resumes pending deletion cleanup; other PDFs and raw chats are preserved.
+resumes pending deletion cleanup; other PDFs and raw chats are preserved. Extracted
+text from the removed PDF remains in the active generation until a successful rebuild,
+and can remain in a pinned older generation until its search completes or cleanup
+succeeds. Historical chat content and backups are not erased by this cleanup.
 
 Persistent jobs in `data/state/index_jobs.json` become failed with retry guidance
-when interrupted by restart. Failed writes can leave unreferenced original PDFs or
-generation directories, which are retained for diagnosis and never advertised as
-ready merely because files exist. If component hashes/mappings are corrupt, status
+when interrupted by restart. Failed writes can leave unreferenced original PDFs; generation directories are
+cleaned as described above and are never advertised as ready merely because files exist. If component hashes/mappings are corrupt, status
 reports unavailability and rebuilding from original PDFs is required.
 
 Hashes are checked before FAISS deserialization. They detect corruption; someone

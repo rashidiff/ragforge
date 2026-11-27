@@ -348,3 +348,85 @@ def test_storage_failure_logs_numeric_os_details_without_private_paths(tmp_path,
         assert "OS error" in manager.status()["jobs"][0]["error"]
     finally:
         manager.close()
+
+
+def test_generation_retention_cleans_failures_and_recovers_orphans(tmp_path, extraction):
+    manager = make_manager(tmp_path)
+    try:
+        manager.submit("upload", pdf=upload(manager))
+        finish(manager)
+        first = manager.status()["index_version"]
+        for _ in range(3):
+            manager.submit("rebuild")
+            finish(manager)
+        active = manager.status()["index_version"]
+        assert {p.name for p in manager.root.iterdir()} == {active}
+        assert not (manager.root / first).exists()
+        with patch("app.services.index_manager.HybridSnapshot.save", side_effect=OSError("disk")):
+            manager.submit("rebuild")
+            finish(manager)
+        assert {p.name for p in manager.root.iterdir()} == {active}
+        orphan = manager.root / str(uuid4())
+        orphan.mkdir()
+        (orphan / "partial").write_text("partial")
+        unrelated = manager.root / "notes"
+        unrelated.mkdir()
+    finally:
+        manager.close()
+    reopened = make_manager(tmp_path)
+    try:
+        assert not orphan.exists()
+        assert unrelated.exists()
+        assert (reopened.root / active).exists()
+        assert reopened.search_library("deadline")
+    finally:
+        reopened.close()
+
+
+def test_generation_pinned_until_in_flight_search_finishes(tmp_path, extraction):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    manager = make_manager(tmp_path)
+    entered, release = Event(), Event()
+    try:
+        manager.submit("upload", pdf=upload(manager))
+        finish(manager)
+        old = manager.status()["index_version"]
+        original = manager.embeddings.query
+
+        def paused_query(query):
+            entered.set()
+            assert release.wait(timeout=10)
+            return original(query)
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            with patch.object(manager.embeddings, "query", side_effect=paused_query):
+                search = executor.submit(manager.search_library, "deadline")
+                assert entered.wait(timeout=10)
+                manager.submit("rebuild")
+                finish(manager)
+                assert (manager.root / old).exists()
+                assert len(list(manager.root.iterdir())) == 2
+                release.set()
+                assert search.result(timeout=10)
+        assert not (manager.root / old).exists()
+        assert len(list(manager.root.iterdir())) == 1
+    finally:
+        release.set()
+        manager.close()
+
+
+def test_corrupt_active_generation_is_preserved_on_recovery(tmp_path, extraction):
+    manager = make_manager(tmp_path)
+    manager.submit("upload", pdf=upload(manager))
+    finish(manager)
+    active = manager.status()["index_version"]
+    manager.close()
+    (tmp_path / "index/generations" / active / "generation.json").write_text("broken")
+    reopened = make_manager(tmp_path)
+    try:
+        assert (reopened.root / active).exists()
+        assert reopened.status()["warnings"]
+    finally:
+        reopened.close()
