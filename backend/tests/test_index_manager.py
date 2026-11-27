@@ -400,16 +400,18 @@ def test_generation_pinned_until_in_flight_search_finishes(tmp_path, extraction)
             assert release.wait(timeout=10)
             return original(query)
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            with patch.object(manager.embeddings, "query", side_effect=paused_query):
-                search = executor.submit(manager.search_library, "deadline")
-                assert entered.wait(timeout=10)
-                manager.submit("rebuild")
-                finish(manager)
-                assert (manager.root / old).exists()
-                assert len(list(manager.root.iterdir())) == 2
-                release.set()
-                assert search.result(timeout=10)
+        with (
+            ThreadPoolExecutor(max_workers=1) as executor,
+            patch.object(manager.embeddings, "query", side_effect=paused_query),
+        ):
+            search = executor.submit(manager.search_library, "deadline")
+            assert entered.wait(timeout=10)
+            manager.submit("rebuild")
+            finish(manager)
+            assert (manager.root / old).exists()
+            assert len(list(manager.root.iterdir())) == 2
+            release.set()
+            assert search.result(timeout=10)
         assert not (manager.root / old).exists()
         assert len(list(manager.root.iterdir())) == 1
     finally:

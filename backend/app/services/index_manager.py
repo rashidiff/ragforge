@@ -20,7 +20,6 @@ from .pdf_ingestion import LibraryStore, PdfIntakeError, ValidatedPdf, managed_p
 from .retrieval import HybridSnapshot
 from .state_store import JsonState
 
-
 logger = logging.getLogger(__name__)
 
 
