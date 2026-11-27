@@ -1,6 +1,8 @@
 """Serialized indexing jobs and atomic, restartable generation publication."""
 
+import logging
 import os
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -17,6 +19,8 @@ from .pdf_extraction import extract_pages
 from .pdf_ingestion import LibraryStore, PdfIntakeError, ValidatedPdf, managed_pdf_path
 from .retrieval import HybridSnapshot
 from .state_store import JsonState
+
+logger = logging.getLogger(__name__)
 
 
 def timestamp():
@@ -54,8 +58,10 @@ class IndexManager:
         self._busy = False
         self._snapshot: HybridSnapshot | None = None
         self._unavailable = None
+        self._readers: dict[str, int] = {}
         self._recover_jobs()
         self._restore()
+        self._cleanup_generations()
 
     def _recover_jobs(self):
         def mutate(state):
@@ -87,6 +93,43 @@ class IndexManager:
         except (OSError, ValueError, TypeError, KeyError, ImportError, RuntimeError):
             self._snapshot = None
             self._unavailable = "The saved index cannot be read. Install local RAG dependencies if missing, or rebuild from original PDFs."
+
+    def _cleanup_generations(self):
+        """Remove unreferenced UUID generations; caller holds the manager lock when running.
+
+        Startup and the end of a serialized build are the only times cleanup can
+        run while no build directory is being written. In-flight readers pin their
+        generation until they finish, even though snapshots are loaded in memory.
+        """
+        try:
+            pointer = self.library.manifest.read().get("active_index")
+            protected = set(self._readers)
+            if self._snapshot is not None:
+                protected.add(self._snapshot.version)
+            if pointer is not None:
+                version = pointer["version"]
+                if str(UUID(version)) != version:
+                    return  # An invalid pointer must not cause destructive cleanup.
+                protected.add(version)
+            for directory in self.root.iterdir():
+                try:
+                    if str(UUID(directory.name)) != directory.name:
+                        continue
+                except ValueError:
+                    continue
+                try:
+                    if (
+                        directory.name in protected
+                        or directory.is_symlink()
+                        or not directory.is_dir()
+                    ):
+                        continue
+                    shutil.rmtree(directory)
+                except OSError:
+                    logger.warning("Could not remove an index generation", exc_info=True)
+        except (OSError, ValueError, TypeError, KeyError):
+            # Cleanup is best effort; preserve the published index and retry later.
+            logger.warning("Could not clean index generations", exc_info=True)
 
     def _compatible(self, snapshot) -> bool:
         return (
@@ -287,6 +330,7 @@ class IndexManager:
         finally:
             with self._lock:
                 self._busy = False
+                self._cleanup_generations()
 
     def _rebuild(self, job_id: str):
         desired = (self.settings.embedding_model, self.settings.embedding_revision)
@@ -414,7 +458,24 @@ class IndexManager:
             raise ValueError("Search requires nonblank text and top_k between 1 and 20")
         with self._lock:
             snapshot = self._snapshot
+            if snapshot is None or not self._compatible(snapshot):
+                raise IndexUnavailableError(
+                    "Library index is unavailable or uses another embedding model. Rebuild it."
+                )
+            self._readers[snapshot.version] = self._readers.get(snapshot.version, 0) + 1
             encoder = self.embeddings
+        try:
+            return self._search_snapshot(snapshot, encoder, query, top_k, optional_document_ids)
+        finally:
+            with self._lock:
+                self._readers[snapshot.version] -= 1
+                if not self._readers[snapshot.version]:
+                    del self._readers[snapshot.version]
+                if not self._busy:
+                    self._cleanup_generations()
+
+    def _search_snapshot(self, snapshot, encoder, query, top_k, optional_document_ids):
+        with self._lock:
             if snapshot is None or not self._compatible(snapshot):
                 raise IndexUnavailableError(
                     "Library index is unavailable or uses another embedding model. Rebuild it."
